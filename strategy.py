@@ -242,7 +242,7 @@ class MLStrategy:
         X = df[features]
         y = df['target']
         
-        model = RandomForestClassifier(n_estimators=100, min_samples_split=10, random_state=42)
+        model = RandomForestClassifier(n_estimators=100, min_samples_split=10, random_state=42, class_weight="balanced")
         model.fit(X, y)
         self.models[instrument] = model
         self.logger.info(f"[{instrument}] ML Strategy trained successfully. Rows: {len(df)}")

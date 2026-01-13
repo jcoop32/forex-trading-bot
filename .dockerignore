@@ -1,0 +1,8 @@
+.git
+.venv
+__pycache__
+.env
+.env.example
+*.log
+uv.lock
+.python-version

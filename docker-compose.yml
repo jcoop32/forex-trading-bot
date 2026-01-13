@@ -1,0 +1,11 @@
+services:
+  trading-bot:
+    build: .
+    container_name: forex-trading-bot
+    restart: unless-stopped
+    # Mount the .env file from the host
+    env_file:
+      - .env
+    # Persist logs to the host
+    volumes:
+      - ./trading_bot.log:/app/trading_bot.log
