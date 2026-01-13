@@ -50,6 +50,100 @@ class MLStrategy:
         lower = sma - (std * std_dev)
         return upper, lower
 
+    def calculate_adx(self, df, period=14):
+        """
+        Calculate Average Directional Index (ADX) using Wilder's Smoothing.
+        """
+        if len(df) < period + 1:
+            return pd.Series(0, index=df.index)
+
+        # Calculate True Range (TR)
+        high = df['high']
+        low = df['low']
+        close = df['close']
+        
+        tr1 = high - low
+        tr2 = np.abs(high - close.shift(1))
+        tr3 = np.abs(low - close.shift(1))
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+        # Calculate Directional Movement (DM)
+        up_move = high - high.shift(1)
+        down_move = low.shift(1) - low
+        
+        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+        
+        # Smooth TR, +DM, -DM using Wilder's smoothing (alpha = 1/period)
+        tr_smooth = tr.ewm(alpha=1/period, adjust=False).mean()
+        plus_dm_smooth = pd.Series(plus_dm, index=df.index).ewm(alpha=1/period, adjust=False).mean()
+        minus_dm_smooth = pd.Series(minus_dm, index=df.index).ewm(alpha=1/period, adjust=False).mean()
+
+        # Calculate +DI and -DI
+        # Handle division by zero
+        tr_smooth = tr_smooth.replace(0, np.nan)
+        plus_di = 100 * (plus_dm_smooth / tr_smooth)
+        minus_di = 100 * (minus_dm_smooth / tr_smooth)
+
+        # Calculate DX
+        sum_di = plus_di + minus_di
+        sum_di = sum_di.replace(0, np.nan)
+        dx = 100 * np.abs(plus_di - minus_di) / sum_di
+        
+        # Calculate ADX (Smooth DX)
+        adx = dx.ewm(alpha=1/period, adjust=False).mean()
+        
+        return adx.fillna(0) # Fill NaNs with 0 for safety
+
+    def detect_patterns(self, df):
+        """
+        Detect Candlestick Patterns: Pinbar and Engulfing.
+        Returns two series: pattern_pinbar, pattern_engulfing
+        """
+        pinbar = pd.Series(0, index=df.index)
+        engulfing = pd.Series(0.0, index=df.index) # Use float for safety
+        
+        if len(df) < 2:
+            return pinbar, engulfing
+
+        open_price = df['open']
+        high = df['high']
+        low = df['low']
+        close = df['close']
+        
+        # Calculate body and wicks
+        body = np.abs(close - open_price)
+        upper_wick = high - np.maximum(open_price, close)
+        lower_wick = np.minimum(open_price, close) - low
+        
+        # Direction: 1 for green, -1 for red
+        direction = np.where(close > open_price, 1, -1)
+        
+        # --- Pinbar Detection ---
+        # Bullish Pinbar: Lower Wick > 2 * Body & Upper Wick < Body
+        bullish_pinbar = (lower_wick > 2 * body) & (upper_wick < body)
+        # Bearish Pinbar: Upper Wick > 2 * Body & Lower Wick < Body
+        bearish_pinbar = (upper_wick > 2 * body) & (lower_wick < body)
+        
+        pinbar[bullish_pinbar] = 1
+        pinbar[bearish_pinbar] = -1
+        
+        # --- Engulfing Detection ---
+        # Previous candle data
+        prev_body = body.shift(1)
+        prev_direction = pd.Series(direction, index=df.index).shift(1)
+        
+        # Bullish Engulfing: Current Green, Prev Red, Current Body > Prev Body
+        bull_engulf = (direction == 1) & (prev_direction == -1) & (body > prev_body)
+        
+        # Bearish Engulfing: Current Red, Prev Green, Current Body > Prev Body
+        bear_engulf = (direction == -1) & (prev_direction == 1) & (body > prev_body)
+        
+        engulfing[bull_engulf] = 1.0
+        engulfing[bear_engulf] = -1.0
+        
+        return pinbar, engulfing
+
     def prepare_single_frame(self, df, prefix=""):
         """Generate features for a single timeframe."""
         if df.empty:
@@ -76,6 +170,14 @@ class MLStrategy:
         # Distance from bands (0 to 1 scaling approx? or just diff)
         df[f'{prefix}bb_width'] = (bb_up - bb_low) / df['close']
         df[f'{prefix}bb_pos'] = (df['close'] - bb_low) / (bb_up - bb_low) # 0 = low, 1 = up
+        
+        # ADX
+        df[f'{prefix}adx'] = self.calculate_adx(df)
+        
+        # Patterns
+        p_pin, p_eng = self.detect_patterns(df)
+        df[f'{prefix}pattern_pinbar'] = p_pin
+        df[f'{prefix}pattern_engulfing'] = p_eng
         
         # Lagged features
         df[f'{prefix}returns_lag1'] = df[f'{prefix}returns'].shift(1)
@@ -131,6 +233,7 @@ class MLStrategy:
         # Define Features
         features = [
             'returns', 'volatility', 'rsi', 'atr_norm', 'bb_pos', 
+            'adx', 'pattern_pinbar', 'pattern_engulfing',
             'returns_lag1', 'volatility_lag1',
             'm5_returns', 'm5_rsi', 'm5_atr_norm', 'm5_bb_pos', 'm5_trend_signal',
             'm15_returns', 'm15_rsi', 'm15_atr_norm', 'm15_trend_signal'
@@ -180,6 +283,7 @@ class MLStrategy:
         
         features = [
             'returns', 'volatility', 'rsi', 'atr_norm', 'bb_pos', 
+            'adx', 'pattern_pinbar', 'pattern_engulfing',
             'returns_lag1', 'volatility_lag1',
             'm5_returns', 'm5_rsi', 'm5_atr_norm', 'm5_bb_pos', 'm5_trend_signal',
             'm15_returns', 'm15_rsi', 'm15_atr_norm', 'm15_trend_signal'

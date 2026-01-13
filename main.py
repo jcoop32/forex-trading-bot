@@ -19,7 +19,7 @@ SLEEP_SECONDS = 60
 RISK_REWARD_RATIO = 1.5 
 ATR_MULTIPLIER_SL = 2.0 # Dynamic Stop Loss
 MAX_SPREAD_PIPS = 2.5   # Skip if spread > 2.5 pips
-MAX_CONCURRENT_TRADES = 3
+MAX_CONCURRENT_TRADES = 5
 
 # Suppress invalid escape sequence warnings from oandapyV20
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="oandapyV20")
@@ -232,8 +232,39 @@ def main():
 
     except KeyboardInterrupt:
         logger.info("Bot stopped by user.")
+        if 'conn' in locals() and conn:
+            shutdown_bot(conn)
     except Exception as e:
         logger.error(f"Critical startup error: {e}", exc_info=True)
+
+def shutdown_bot(conn):
+    """
+    Gracefully close all open trades on bot shutdown.
+    """
+    logger = logging.getLogger("trading_bot")
+    logger.info("Initiating graceful shutdown... Checking for open trades.")
+    
+    try:
+        open_trades = conn.get_open_trades()
+        if not open_trades:
+            logger.info("No open trades found. Shutdown complete.")
+            return
+
+        logger.info(f"Found {len(open_trades)} open trades. Closing them now...")
+        
+        for trade in open_trades:
+            trade_id = trade['id']
+            instrument = trade['instrument']
+            units = trade['currentUnits']
+            pl = trade['unrealizedPL']
+            
+            logger.info(f"Closing trade {trade_id} ({instrument}) | Units: {units} | P/L: {pl}")
+            conn.close_trade(trade_id)
+            
+        logger.info("All trades closed successfully.")
+        
+    except Exception as e:
+        logger.error(f"Error during shutdown cleanup: {e}")
 
 if __name__ == "__main__":
     main()
