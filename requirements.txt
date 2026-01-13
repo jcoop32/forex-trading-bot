@@ -1,0 +1,8 @@
+oandapyV20
+pandas
+numpy
+scikit-learn
+python-dotenv
+requests
+feedparser
+google-generativeai
