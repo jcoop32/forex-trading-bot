@@ -38,17 +38,18 @@ class OandaConnection:
             self.logger.error(f"Error fetching candles: {e}")
             return []
 
-    def get_account_balance(self):
-        """Fetch current account balance/margin available."""
+    def get_account_details(self):
+        """Fetch current account balance and margin available."""
         r = accounts.AccountSummary(accountID=self.account_id)
         try:
             self.api.request(r)
-            # We use 'marginAvailable' (conservative) or 'balance'
-            # Let's use balance for risk calc base
-            return float(r.response['account']['balance'])
+            # We use 'marginAvailable' for safety checks and 'balance' for risk sizing
+            balance = float(r.response['account']['balance'])
+            margin_avail = float(r.response['account']['marginAvailable'])
+            return balance, margin_avail
         except Exception as e:
-            self.logger.error(f"Error fetching balance: {e}")
-            return 0.0
+            self.logger.error(f"Error fetching account details: {e}")
+            return 0.0, 0.0
 
     def get_current_price(self, instrument):
         """Fetch current price for an instrument."""
@@ -85,11 +86,12 @@ class OandaConnection:
         else:
             precision = 5
 
+
         if stop_loss_price:
-            data["stopLossOnFill"] = {"price": str(round(stop_loss_price, precision))}
+            data["stopLossOnFill"] = {"price": f"{stop_loss_price:.{precision}f}"}
         
         if take_profit_price:
-            data["takeProfitOnFill"] = {"price": str(round(take_profit_price, precision))}
+            data["takeProfitOnFill"] = {"price": f"{take_profit_price:.{precision}f}"}
 
         r = orders.OrderCreate(accountID=self.account_id, data={"order": data})
         try:

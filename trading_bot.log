@@ -1043,3 +1043,355 @@
 2026-01-12 21:46:43,138 [INFO] ==============================
 
 2026-01-12 21:47:27,640 [INFO] Bot stopped by user.
+2026-01-13 09:34:13,085 [INFO] Starting Multi-Timeframe Scalping Bot (ATR & RSI Enhanced)...
+2026-01-13 09:34:13,085 [INFO] NewsAgent: Active (Gemini Configured)
+2026-01-13 09:34:13,085 [INFO] Connected to OANDA.
+2026-01-13 09:34:13,085 [INFO] Training Strategy on all pairs (M1/M5/M15) with 2000 candles...
+2026-01-13 09:34:13,085 [INFO] [EUR_USD] Fetching historical data...
+2026-01-13 09:34:14,402 [INFO] [EUR_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:34:15,437 [INFO] [EUR_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:34:15,437 [INFO] [GBP_USD] Fetching historical data...
+2026-01-13 09:34:15,640 [INFO] [GBP_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:34:16,672 [INFO] [GBP_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:34:16,673 [INFO] [USD_JPY] Fetching historical data...
+2026-01-13 09:34:16,849 [INFO] [USD_JPY] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:34:17,880 [INFO] [USD_JPY] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:34:17,880 [INFO] [AUD_USD] Fetching historical data...
+2026-01-13 09:34:18,106 [INFO] [AUD_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:34:19,134 [INFO] [AUD_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:34:19,134 [INFO] [USD_CAD] Fetching historical data...
+2026-01-13 09:34:19,523 [INFO] [USD_CAD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:34:20,559 [INFO] [USD_CAD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:34:20,560 [INFO] --- New Cycle ---
+2026-01-13 09:34:20,622 [INFO] Open Trades: 0 / 3
+2026-01-13 09:34:20,623 [INFO] Scanning market...
+2026-01-13 09:34:20,847 [INFO] [GBP_USD] Pred: 0 (Conf: 0.80) | ATR: 0.00026 | RSI: 36.5
+2026-01-13 09:34:20,853 [INFO] [AUD_USD] Pred: 0 (Conf: 0.67) | ATR: 0.00015 | RSI: 56.9
+2026-01-13 09:34:20,937 [INFO] Sentiment for GBP_USD: Long 58.85%, Short 41.15%
+2026-01-13 09:34:20,952 [INFO] Sentiment for AUD_USD: Long 62.33%, Short 37.67%
+2026-01-13 09:34:21,012 [INFO] [USD_JPY] Pred: 0 (Conf: 0.71) | ATR: 0.02929 | RSI: 63.2
+2026-01-13 09:34:21,086 [INFO] Sentiment for USD_JPY: Long 64.61%, Short 35.39%
+2026-01-13 09:34:21,313 [INFO] [USD_CAD] Pred: 0 (Conf: 0.74) | ATR: 0.00019 | RSI: 39.0
+2026-01-13 09:34:21,318 [INFO] [EUR_USD] Pred: 0 (Conf: 0.78) | ATR: 0.00018 | RSI: 30.2
+2026-01-13 09:34:21,373 [INFO] Sentiment for EUR_USD: Long 62.21%, Short 37.79%
+2026-01-13 09:34:21,386 [INFO] Sentiment for USD_CAD: Long 63.30%, Short 36.70%
+2026-01-13 09:34:24,840 [INFO] NewsAgent: Gemini Score: 0.00 (from 5 headlines)
+2026-01-13 09:34:24,910 [INFO] Candidate Found: GBP_USD (SELL, Conf: 0.80)
+2026-01-13 09:34:31,723 [INFO] NewsAgent: Gemini Score: -0.30 (from 5 headlines)
+2026-01-13 09:34:34,473 [INFO] NewsAgent: Gemini Score: -0.45 (from 5 headlines)
+2026-01-13 09:34:36,308 [INFO] NewsAgent: Gemini Score: -0.02 (from 5 headlines)
+2026-01-13 09:34:43,688 [INFO] NewsAgent: Gemini Score: -0.08 (from 5 headlines)
+2026-01-13 09:34:43,734 [INFO] Bot stopped by user.
+2026-01-13 09:43:02,198 [INFO] Starting Multi-Timeframe Scalping Bot (ATR & RSI Enhanced)...
+2026-01-13 09:43:02,199 [INFO] NewsAgent: Active (Gemini Configured)
+2026-01-13 09:43:02,199 [INFO] Connected to OANDA.
+2026-01-13 09:43:02,199 [INFO] Training Strategy on all pairs (M1/M5/M15) with 2000 candles...
+2026-01-13 09:43:02,199 [INFO] [EUR_USD] Fetching historical data...
+2026-01-13 09:43:02,751 [INFO] [EUR_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:43:03,756 [INFO] [EUR_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:43:03,756 [INFO] [GBP_USD] Fetching historical data...
+2026-01-13 09:43:04,173 [INFO] [GBP_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:43:05,173 [INFO] [GBP_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:43:05,174 [INFO] [USD_JPY] Fetching historical data...
+2026-01-13 09:43:05,764 [INFO] [USD_JPY] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:43:06,764 [INFO] [USD_JPY] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:43:06,764 [INFO] [AUD_USD] Fetching historical data...
+2026-01-13 09:43:07,012 [INFO] [AUD_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:43:08,003 [INFO] [AUD_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:43:08,003 [INFO] [USD_CAD] Fetching historical data...
+2026-01-13 09:43:08,422 [INFO] [USD_CAD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:43:09,451 [INFO] [USD_CAD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:43:09,452 [INFO] --- New Cycle ---
+2026-01-13 09:43:09,503 [INFO] Open Trades: 0 / 3
+2026-01-13 09:43:09,503 [INFO] Scanning market...
+2026-01-13 09:43:09,709 [INFO] [GBP_USD] Pred: 0 (Conf: 0.85) | ATR: 0.00031 | RSI: 43.2
+2026-01-13 09:43:09,745 [INFO] [USD_JPY] Pred: 0 (Conf: 0.65) | ATR: 0.03621 | RSI: 54.3
+2026-01-13 09:43:09,761 [INFO] [EUR_USD] Pred: 0 (Conf: 0.60) | ATR: 0.00019 | RSI: 50.7
+2026-01-13 09:43:09,833 [INFO] [AUD_USD] Pred: 0 (Conf: 0.60) | ATR: 0.00016 | RSI: 54.7
+2026-01-13 09:43:09,834 [INFO] [USD_CAD] Pred: 0 (Conf: 0.88) | ATR: 0.00018 | RSI: 10.7
+2026-01-13 09:43:09,835 [INFO] Sentiment for GBP_USD: Long 58.85%, Short 41.15%
+2026-01-13 09:43:09,837 [INFO] Sentiment for EUR_USD: Long 62.20%, Short 37.80%
+2026-01-13 09:43:09,854 [INFO] Sentiment for USD_JPY: Long 64.64%, Short 35.36%
+2026-01-13 09:43:09,881 [INFO] Sentiment for USD_CAD: Long 63.30%, Short 36.70%
+2026-01-13 09:43:09,888 [INFO] Sentiment for AUD_USD: Long 62.33%, Short 37.67%
+2026-01-13 09:43:14,030 [INFO] NewsAgent: Gemini Score: 0.00 (from 5 headlines)
+2026-01-13 09:43:14,077 [INFO] Candidate Found: GBP_USD (SELL, Conf: 0.85)
+2026-01-13 09:43:17,763 [INFO] NewsAgent: Gemini Score: -0.35 (from 5 headlines)
+2026-01-13 09:43:17,803 [INFO] Candidate Found: USD_CAD (SELL, Conf: 0.88)
+2026-01-13 09:43:19,221 [INFO] NewsAgent: Gemini Score: -0.06 (from 5 headlines)
+2026-01-13 09:43:19,265 [INFO] Candidate Found: EUR_USD (SELL, Conf: 0.60)
+2026-01-13 09:43:24,987 [INFO] NewsAgent: Gemini Score: 0.12 (from 5 headlines)
+2026-01-13 09:43:25,024 [INFO] Candidate Found: AUD_USD (SELL, Conf: 0.60)
+2026-01-13 09:43:34,634 [INFO] NewsAgent: Gemini Score: 0.18 (from 5 headlines)
+2026-01-13 09:43:34,740 [INFO] Candidate Found: USD_JPY (SELL, Conf: 0.65)
+2026-01-13 09:43:34,740 [INFO] Executing SELL on USD_CAD (Conf: 0.88, ATR: 0.00018)
+2026-01-13 09:43:34,740 [INFO] High Confidence (87.77%) -> Risk Bost +1.0%
+2026-01-13 09:43:34,740 [INFO] News Support (Score -0.35) -> Risk Bost +0.5%
+2026-01-13 09:43:34,741 [INFO] Final Risk Percentage: 2.50%
+2026-01-13 09:43:34,777 [WARNING] Calculated units 6769501 exceeds max leverage (20x). Capping.
+2026-01-13 09:43:34,777 [INFO] Risking $2437.39 (Bal: $97495.48) -> 1949909 Units
+2026-01-13 09:43:34,777 [INFO]  >> Placing Order: USD_CAD SELL | Units: 1949909 | SL Dist: 0.00050
+2026-01-13 09:43:34,827 [INFO] Order created: {'orderCreateTransaction': {'id': '210', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '210', 'requestID': '115503258571526117', 'time': '2026-01-13T15:43:34.813836702Z', 'type': 'MARKET_ORDER', 'instrument': 'USD_CAD', 'units': '-1949909', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.38793', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.38918', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '211', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '210', 'requestID': '115503258571526117', 'time': '2026-01-13T15:43:34.813836702Z', 'type': 'ORDER_FILL', 'orderID': '210', 'instrument': 'USD_CAD', 'units': '-1949909', 'requestedUnits': '-1949909', 'price': '1.38848', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '97495.4805', 'gainQuoteHomeConversionFactor': '0.716561945684', 'lossQuoteHomeConversionFactor': '0.723763573279', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '133.4039', 'fullVWAP': '1.38848', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '1.38848', 'tradeID': '211', 'units': '-1949909', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '133.4039', 'initialMarginRequired': '38998.1800'}, 'fullPrice': {'closeoutBid': '1.38819', 'closeoutAsk': '1.38897', 'timestamp': '2026-01-13T15:43:34.306478449Z', 'bids': [{'price': '1.38849', 'liquidity': '500000'}, {'price': '1.38848', 'liquidity': '500000'}, {'price': '1.38847', 'liquidity': '2000000'}, {'price': '1.38846', 'liquidity': '2000000'}, {'price': '1.38845', 'liquidity': '5000000'}, {'price': '1.38824', 'liquidity': '10000000'}, {'price': '1.38819', 'liquidity': '10000000'}], 'asks': [{'price': '1.38866', 'liquidity': '500000'}, {'price': '1.38868', 'liquidity': '2500000'}, {'price': '1.38870', 'liquidity': '2000000'}, {'price': '1.38871', 'liquidity': '5000000'}, {'price': '1.38892', 'liquidity': '10000000'}, {'price': '1.38897', 'liquidity': '10000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '0.71656194568417'}, 'lossQuoteHome': {'factor': '0.72376357327899'}, 'gainBaseHome': {'factor': '1'}, 'lossBaseHome': {'factor': '1'}}}, 'relatedTransactionIDs': ['210', '211', '212', '213'], 'lastTransactionID': '213'}
+2026-01-13 09:43:34,827 [INFO] 
+==============================
+2026-01-13 09:43:34,827 [INFO] TRADE EXECUTED: SELL USD_CAD
+2026-01-13 09:43:34,827 [INFO] Units:    1,949,909
+2026-01-13 09:43:34,827 [INFO] Risk:     $2437.39 (2.50%)
+2026-01-13 09:43:34,827 [INFO] Target:   $3656.08
+2026-01-13 09:43:34,827 [INFO] ==============================
+
+2026-01-13 09:43:34,827 [INFO] Executing SELL on GBP_USD (Conf: 0.85, ATR: 0.00031)
+2026-01-13 09:43:34,827 [INFO] High Confidence (85.43%) -> Risk Bost +1.0%
+2026-01-13 09:43:34,827 [INFO] Final Risk Percentage: 2.00%
+2026-01-13 09:43:34,865 [WARNING] Calculated units 3152278 exceeds max leverage (20x). Capping.
+2026-01-13 09:43:34,865 [INFO] Risking $1949.91 (Bal: $97495.48) -> 1450992 Units
+2026-01-13 09:43:34,865 [INFO]  >> Placing Order: GBP_USD SELL | Units: 1450992 | SL Dist: 0.00062
+2026-01-13 09:43:34,931 [INFO] Order created: {'orderCreateTransaction': {'id': '214', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '214', 'requestID': '115503258571526212', 'time': '2026-01-13T15:43:34.919945568Z', 'type': 'MARKET_ORDER', 'instrument': 'GBP_USD', 'units': '-1450992', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.34292', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.34446', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderCancelTransaction': {'id': '215', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '214', 'requestID': '115503258571526212', 'time': '2026-01-13T15:43:34.919945568Z', 'type': 'ORDER_CANCEL', 'orderID': '214', 'reason': 'INSUFFICIENT_MARGIN'}, 'relatedTransactionIDs': ['214', '215'], 'lastTransactionID': '215'}
+2026-01-13 09:43:34,932 [INFO] 
+==============================
+2026-01-13 09:43:34,932 [INFO] TRADE EXECUTED: SELL GBP_USD
+2026-01-13 09:43:34,932 [INFO] Units:    1,450,992
+2026-01-13 09:43:34,932 [INFO] Risk:     $1949.91 (2.00%)
+2026-01-13 09:43:34,932 [INFO] Target:   $2924.86
+2026-01-13 09:43:34,932 [INFO] ==============================
+
+2026-01-13 09:43:34,932 [INFO] Executing SELL on USD_JPY (Conf: 0.65, ATR: 0.03621)
+2026-01-13 09:43:34,932 [INFO] Moderate Confidence (64.61%) -> Risk Bost +0.5%
+2026-01-13 09:43:34,932 [INFO] Final Risk Percentage: 1.50%
+2026-01-13 09:43:34,971 [WARNING] Calculated units 3211134 exceeds max leverage (20x). Capping.
+2026-01-13 09:43:34,971 [INFO] Risking $1462.43 (Bal: $97495.48) -> 1949909 Units
+2026-01-13 09:43:34,971 [INFO]  >> Placing Order: USD_JPY SELL | Units: 1949909 | SL Dist: 0.07243
+2026-01-13 09:43:35,010 [INFO] Order created: {'orderCreateTransaction': {'id': '216', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '216', 'requestID': '61460063049580528', 'time': '2026-01-13T15:43:35.005595648Z', 'type': 'MARKET_ORDER', 'instrument': 'USD_JPY', 'units': '-1949909', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '158.926', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '159.107', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderCancelTransaction': {'id': '217', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '216', 'requestID': '61460063049580528', 'time': '2026-01-13T15:43:35.005595648Z', 'type': 'ORDER_CANCEL', 'orderID': '216', 'reason': 'INSUFFICIENT_MARGIN'}, 'relatedTransactionIDs': ['216', '217'], 'lastTransactionID': '217'}
+2026-01-13 09:43:35,010 [INFO] 
+==============================
+2026-01-13 09:43:35,010 [INFO] TRADE EXECUTED: SELL USD_JPY
+2026-01-13 09:43:35,010 [INFO] Units:    1,949,909
+2026-01-13 09:43:35,011 [INFO] Risk:     $1462.43 (1.50%)
+2026-01-13 09:43:35,011 [INFO] Target:   $2193.65
+2026-01-13 09:43:35,011 [INFO] ==============================
+
+2026-01-13 09:44:35,012 [INFO] --- New Cycle ---
+2026-01-13 09:44:35,055 [INFO] Open Trades: 1 / 3
+2026-01-13 09:44:35,055 [INFO]  >> OPEN: USD_CAD (SELL) P/L: -268.1419
+2026-01-13 09:44:35,209 [INFO] [USD_CAD] Pred: 0 (Conf: 0.82) | ATR: 0.00019 | RSI: 12.2
+2026-01-13 09:44:35,209 [INFO] Scanning market...
+2026-01-13 09:44:35,467 [INFO] [GBP_USD] Pred: 0 (Conf: 0.72) | ATR: 0.00029 | RSI: 54.8
+2026-01-13 09:44:35,471 [INFO] [EUR_USD] Pred: 0 (Conf: 0.69) | ATR: 0.00017 | RSI: 59.1
+2026-01-13 09:44:35,478 [INFO] [AUD_USD] Pred: 1 (Conf: 0.54) | ATR: 0.00016 | RSI: 50.0
+2026-01-13 09:44:35,516 [INFO] Sentiment for GBP_USD: Long 58.85%, Short 41.15%
+2026-01-13 09:44:35,519 [INFO] Sentiment for AUD_USD: Long 62.33%, Short 37.67%
+2026-01-13 09:44:35,561 [INFO] Candidate Found: AUD_USD (BUY, Conf: 0.54)
+2026-01-13 09:44:35,562 [INFO] Candidate Found: GBP_USD (SELL, Conf: 0.72)
+2026-01-13 09:44:35,562 [INFO] Sentiment for EUR_USD: Long 62.20%, Short 37.80%
+2026-01-13 09:44:35,607 [INFO] Candidate Found: EUR_USD (SELL, Conf: 0.69)
+2026-01-13 09:44:35,847 [INFO] [USD_JPY] Pred: 1 (Conf: 0.53) | ATR: 0.03693 | RSI: 55.2
+2026-01-13 09:44:35,889 [INFO] Sentiment for USD_JPY: Long 64.64%, Short 35.36%
+2026-01-13 09:44:35,930 [INFO] Candidate Found: USD_JPY (BUY, Conf: 0.53)
+2026-01-13 09:44:35,930 [INFO] Executing SELL on GBP_USD (Conf: 0.72, ATR: 0.00029)
+2026-01-13 09:44:35,930 [INFO] High Confidence (72.29%) -> Risk Bost +1.0%
+2026-01-13 09:44:35,930 [INFO] Final Risk Percentage: 2.00%
+2026-01-13 09:44:35,994 [WARNING] Calculated units 3337253 exceeds max leverage (20x). Capping.
+2026-01-13 09:44:35,994 [INFO] Risking $1949.91 (Bal: $97495.48) -> 1450868 Units
+2026-01-13 09:44:35,994 [INFO]  >> Placing Order: GBP_USD SELL | Units: 1450868 | SL Dist: 0.00058
+2026-01-13 09:44:36,038 [INFO] Order created: {'orderCreateTransaction': {'id': '218', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '218', 'requestID': '115503258831626521', 'time': '2026-01-13T15:44:36.030103964Z', 'type': 'MARKET_ORDER', 'instrument': 'GBP_USD', 'units': '-1450868', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.34308', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.34454', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderCancelTransaction': {'id': '219', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '218', 'requestID': '115503258831626521', 'time': '2026-01-13T15:44:36.030103964Z', 'type': 'ORDER_CANCEL', 'orderID': '218', 'reason': 'INSUFFICIENT_MARGIN'}, 'relatedTransactionIDs': ['218', '219'], 'lastTransactionID': '219'}
+2026-01-13 09:44:36,038 [INFO] 
+==============================
+2026-01-13 09:44:36,038 [INFO] TRADE EXECUTED: SELL GBP_USD
+2026-01-13 09:44:36,038 [INFO] Units:    1,450,868
+2026-01-13 09:44:36,038 [INFO] Risk:     $1949.91 (2.00%)
+2026-01-13 09:44:36,038 [INFO] Target:   $2924.86
+2026-01-13 09:44:36,038 [INFO] ==============================
+
+2026-01-13 09:44:36,038 [INFO] Executing SELL on EUR_USD (Conf: 0.69, ATR: 0.00017)
+2026-01-13 09:44:36,038 [INFO] Moderate Confidence (69.46%) -> Risk Bost +0.5%
+2026-01-13 09:44:36,038 [INFO] Final Risk Percentage: 1.50%
+2026-01-13 09:44:36,095 [WARNING] Calculated units 2924864 exceeds max leverage (20x). Capping.
+2026-01-13 09:44:36,095 [INFO] Risking $1462.43 (Bal: $97495.48) -> 1674029 Units
+2026-01-13 09:44:36,095 [INFO]  >> Placing Order: EUR_USD SELL | Units: 1674029 | SL Dist: 0.00050
+2026-01-13 09:44:36,182 [INFO] Order created: {'orderCreateTransaction': {'id': '220', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '220', 'requestID': '97488860321470081', 'time': '2026-01-13T15:44:36.174482873Z', 'type': 'MARKET_ORDER', 'instrument': 'EUR_USD', 'units': '-1674029', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.16405', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.16530', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '221', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '220', 'requestID': '97488860321470081', 'time': '2026-01-13T15:44:36.174482873Z', 'type': 'ORDER_FILL', 'orderID': '220', 'instrument': 'EUR_USD', 'units': '-1674029', 'requestedUnits': '-1674029', 'price': '1.16471', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '97495.4805', 'gainQuoteHomeConversionFactor': '1', 'lossQuoteHomeConversionFactor': '1', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '159.0328', 'fullVWAP': '1.16471', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '1.16471', 'tradeID': '221', 'units': '-1674029', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '159.0328', 'initialMarginRequired': '38998.1796'}, 'fullPrice': {'closeoutBid': '1.16463', 'closeoutAsk': '1.16499', 'timestamp': '2026-01-13T15:44:36.086764098Z', 'bids': [{'price': '1.16472', 'liquidity': '500000'}, {'price': '1.16471', 'liquidity': '500000'}, {'price': '1.16470', 'liquidity': '2000000'}, {'price': '1.16469', 'liquidity': '2000000'}, {'price': '1.16468', 'liquidity': '5000000'}, {'price': '1.16466', 'liquidity': '10000000'}, {'price': '1.16463', 'liquidity': '10000000'}], 'asks': [{'price': '1.16489', 'liquidity': '500000'}, {'price': '1.16491', 'liquidity': '2500000'}, {'price': '1.16492', 'liquidity': '2000000'}, {'price': '1.16493', 'liquidity': '5000000'}, {'price': '1.16496', 'liquidity': '10000000'}, {'price': '1.16499', 'liquidity': '10000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '1'}, 'lossQuoteHome': {'factor': '1'}, 'gainBaseHome': {'factor': '1.15897600'}, 'lossBaseHome': {'factor': '1.17062400'}}}, 'relatedTransactionIDs': ['220', '221', '222', '223'], 'lastTransactionID': '223'}
+2026-01-13 09:44:36,182 [INFO] 
+==============================
+2026-01-13 09:44:36,182 [INFO] TRADE EXECUTED: SELL EUR_USD
+2026-01-13 09:44:36,182 [INFO] Units:    1,674,029
+2026-01-13 09:44:36,182 [INFO] Risk:     $1462.43 (1.50%)
+2026-01-13 09:44:36,182 [INFO] Target:   $2193.65
+2026-01-13 09:44:36,182 [INFO] ==============================
+
+2026-01-13 09:45:09,550 [INFO] Bot stopped by user.
+2026-01-13 09:46:39,382 [INFO] Starting Multi-Timeframe Scalping Bot (ATR & RSI Enhanced)...
+2026-01-13 09:46:39,382 [INFO] NewsAgent: Active (Gemini Configured)
+2026-01-13 09:46:39,382 [INFO] Connected to OANDA.
+2026-01-13 09:46:39,382 [INFO] Training Strategy on all pairs (M1/M5/M15) with 2000 candles...
+2026-01-13 09:46:39,382 [INFO] [EUR_USD] Fetching historical data...
+2026-01-13 09:46:39,643 [INFO] [EUR_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:46:40,663 [INFO] [EUR_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:46:40,663 [INFO] [GBP_USD] Fetching historical data...
+2026-01-13 09:46:40,921 [INFO] [GBP_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:46:41,933 [INFO] [GBP_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:46:41,933 [INFO] [USD_JPY] Fetching historical data...
+2026-01-13 09:46:42,231 [INFO] [USD_JPY] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:46:43,246 [INFO] [USD_JPY] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:46:43,246 [INFO] [AUD_USD] Fetching historical data...
+2026-01-13 09:46:43,598 [INFO] [AUD_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:46:44,616 [INFO] [AUD_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:46:44,616 [INFO] [USD_CAD] Fetching historical data...
+2026-01-13 09:46:44,900 [INFO] [USD_CAD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 09:46:45,936 [INFO] [USD_CAD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 09:46:45,936 [INFO] --- New Cycle ---
+2026-01-13 09:46:45,992 [INFO] Open Trades: 0 / 3
+2026-01-13 09:46:45,992 [INFO] Scanning market...
+2026-01-13 09:46:46,217 [INFO] [EUR_USD] Pred: 0 (Conf: 0.80) | ATR: 0.00017 | RSI: 71.7
+2026-01-13 09:46:46,306 [INFO] Sentiment for EUR_USD: Long 62.20%, Short 37.80%
+2026-01-13 09:46:46,314 [INFO] [GBP_USD] Pred: 0 (Conf: 0.83) | ATR: 0.00028 | RSI: 63.1
+2026-01-13 09:46:46,319 [INFO] [USD_JPY] Pred: 0 (Conf: 0.75) | ATR: 0.03493 | RSI: 54.6
+2026-01-13 09:46:46,396 [INFO] [USD_CAD] Pred: 0 (Conf: 0.87) | ATR: 0.00019 | RSI: 8.7
+2026-01-13 09:46:46,397 [INFO] Sentiment for USD_JPY: Long 64.64%, Short 35.36%
+2026-01-13 09:46:46,397 [INFO] Sentiment for GBP_USD: Long 58.85%, Short 41.15%
+2026-01-13 09:46:46,487 [INFO] Sentiment for USD_CAD: Long 63.30%, Short 36.70%
+2026-01-13 09:46:46,494 [INFO] [AUD_USD] Pred: 0 (Conf: 0.76) | ATR: 0.00015 | RSI: 52.1
+2026-01-13 09:46:46,560 [INFO] Sentiment for AUD_USD: Long 62.33%, Short 37.67%
+2026-01-13 09:46:50,598 [INFO] NewsAgent: Gemini Score: 0.00 (from 5 headlines)
+2026-01-13 09:46:50,649 [INFO] Candidate Found: GBP_USD (SELL, Conf: 0.83)
+2026-01-13 09:46:54,564 [INFO] NewsAgent: Gemini Score: -0.02 (from 5 headlines)
+2026-01-13 09:46:54,604 [INFO] Candidate Found: EUR_USD (SELL, Conf: 0.80)
+2026-01-13 09:46:59,985 [INFO] NewsAgent: Gemini Score: 0.20 (from 5 headlines)
+2026-01-13 09:47:00,083 [INFO] Candidate Found: USD_JPY (SELL, Conf: 0.75)
+2026-01-13 09:47:05,335 [INFO] NewsAgent: Gemini Score: -0.70 (from 5 headlines)
+2026-01-13 09:47:05,384 [INFO] Candidate Found: USD_CAD (SELL, Conf: 0.87)
+2026-01-13 09:47:06,157 [INFO] NewsAgent: Gemini Score: 0.20 (from 5 headlines)
+2026-01-13 09:47:06,195 [INFO] Candidate Found: AUD_USD (SELL, Conf: 0.76)
+2026-01-13 09:47:06,196 [INFO] Executing SELL on USD_CAD (Conf: 0.87, ATR: 0.00019)
+2026-01-13 09:47:06,196 [INFO] High Confidence (87.03%) -> Risk Bost +1.0%
+2026-01-13 09:47:06,196 [INFO] News Support (Score -0.70) -> Risk Bost +0.5%
+2026-01-13 09:47:06,196 [INFO] Final Risk Percentage: 2.50%
+2026-01-13 09:47:06,238 [WARNING] Calculated units 6723700 exceeds available margin cap (Limit: 1840271). Capping.
+2026-01-13 09:47:06,238 [INFO] Risking $2421.41 (Bal: $96856.42, Free: $96856.42) -> 1840271 Units
+2026-01-13 09:47:06,238 [INFO]  >> Placing Order: USD_CAD SELL | Units: 1840271 | SL Dist: 0.00050
+2026-01-13 09:47:06,378 [INFO] Order created: {'orderCreateTransaction': {'id': '232', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '232', 'requestID': '97488860950748622', 'time': '2026-01-13T15:47:06.286728896Z', 'type': 'MARKET_ORDER', 'instrument': 'USD_CAD', 'units': '-1840271', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.38763', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.38888', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '233', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '232', 'requestID': '97488860950748622', 'time': '2026-01-13T15:47:06.286728896Z', 'type': 'ORDER_FILL', 'orderID': '232', 'instrument': 'USD_CAD', 'units': '-1840271', 'requestedUnits': '-1840271', 'price': '1.38829', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '96856.4210', 'gainQuoteHomeConversionFactor': '0.716654845817', 'lossQuoteHomeConversionFactor': '0.723857407082', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '139.1740', 'fullVWAP': '1.38829', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '1.38829', 'tradeID': '233', 'units': '-1840271', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '139.1740', 'initialMarginRequired': '36805.4200'}, 'fullPrice': {'closeoutBid': '1.38800', 'closeoutAsk': '1.38880', 'timestamp': '2026-01-13T15:47:05.937154744Z', 'bids': [{'price': '1.38830', 'liquidity': '500000'}, {'price': '1.38829', 'liquidity': '500000'}, {'price': '1.38828', 'liquidity': '2000000'}, {'price': '1.38827', 'liquidity': '2000000'}, {'price': '1.38826', 'liquidity': '5000000'}, {'price': '1.38805', 'liquidity': '10000000'}, {'price': '1.38800', 'liquidity': '10000000'}], 'asks': [{'price': '1.38849', 'liquidity': '500000'}, {'price': '1.38851', 'liquidity': '2500000'}, {'price': '1.38853', 'liquidity': '2000000'}, {'price': '1.38854', 'liquidity': '5000000'}, {'price': '1.38875', 'liquidity': '10000000'}, {'price': '1.38880', 'liquidity': '10000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '0.71665484581727'}, 'lossQuoteHome': {'factor': '0.72385740708177'}, 'gainBaseHome': {'factor': '1'}, 'lossBaseHome': {'factor': '1'}}}, 'relatedTransactionIDs': ['232', '233', '234', '235'], 'lastTransactionID': '235'}
+2026-01-13 09:47:06,379 [INFO] 
+==============================
+2026-01-13 09:47:06,379 [INFO] TRADE EXECUTED: SELL USD_CAD
+2026-01-13 09:47:06,379 [INFO] Units:    1,840,271
+2026-01-13 09:47:06,379 [INFO] Risk:     $2421.41 (2.50%)
+2026-01-13 09:47:06,379 [INFO] Target:   $3632.12
+2026-01-13 09:47:06,379 [INFO] ==============================
+
+2026-01-13 09:47:06,379 [INFO] Executing SELL on GBP_USD (Conf: 0.83, ATR: 0.00028)
+2026-01-13 09:47:06,379 [INFO] High Confidence (82.72%) -> Risk Bost +1.0%
+2026-01-13 09:47:06,379 [INFO] Final Risk Percentage: 2.00%
+2026-01-13 09:47:06,419 [WARNING] Calculated units 3424216 exceeds available margin cap (Limit: 1138198). Capping.
+2026-01-13 09:47:06,419 [INFO] Risking $1937.13 (Bal: $96856.42, Free: $59905.20) -> 846823 Units
+2026-01-13 09:47:06,419 [INFO]  >> Placing Order: GBP_USD SELL | Units: 846823 | SL Dist: 0.00057
+2026-01-13 09:47:06,466 [INFO] Order created: {'orderCreateTransaction': {'id': '236', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '236', 'requestID': '61460063934725212', 'time': '2026-01-13T15:47:06.459368438Z', 'type': 'MARKET_ORDER', 'instrument': 'GBP_USD', 'units': '-846823', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.34323', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.34465', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '237', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '236', 'requestID': '61460063934725212', 'time': '2026-01-13T15:47:06.459368438Z', 'type': 'ORDER_FILL', 'orderID': '236', 'instrument': 'GBP_USD', 'units': '-846823', 'requestedUnits': '-846823', 'price': '1.34409', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '96856.4210', 'gainQuoteHomeConversionFactor': '1', 'lossQuoteHomeConversionFactor': '1', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '71.9800', 'fullVWAP': '1.34409', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '1.34409', 'tradeID': '237', 'units': '-846823', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '71.9800', 'initialMarginRequired': '56914.1270'}, 'fullPrice': {'closeoutBid': '1.34391', 'closeoutAsk': '1.34445', 'timestamp': '2026-01-13T15:47:06.320593909Z', 'bids': [{'price': '1.34409', 'liquidity': '500000'}, {'price': '1.34408', 'liquidity': '500000'}, {'price': '1.34407', 'liquidity': '2000000'}, {'price': '1.34406', 'liquidity': '2000000'}, {'price': '1.34404', 'liquidity': '5000000'}, {'price': '1.34400', 'liquidity': '10000000'}, {'price': '1.34391', 'liquidity': '5000000'}], 'asks': [{'price': '1.34426', 'liquidity': '500000'}, {'price': '1.34428', 'liquidity': '2500000'}, {'price': '1.34430', 'liquidity': '2000000'}, {'price': '1.34431', 'liquidity': '5000000'}, {'price': '1.34436', 'liquidity': '10000000'}, {'price': '1.34445', 'liquidity': '5000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '1'}, 'lossQuoteHome': {'factor': '1'}, 'gainBaseHome': {'factor': '1.33745910'}, 'lossBaseHome': {'factor': '1.35090090'}}}, 'relatedTransactionIDs': ['236', '237', '238', '239'], 'lastTransactionID': '239'}
+2026-01-13 09:47:06,466 [INFO] 
+==============================
+2026-01-13 09:47:06,466 [INFO] TRADE EXECUTED: SELL GBP_USD
+2026-01-13 09:47:06,466 [INFO] Units:    846,823
+2026-01-13 09:47:06,466 [INFO] Risk:     $1937.13 (2.00%)
+2026-01-13 09:47:06,466 [INFO] Target:   $2905.69
+2026-01-13 09:47:06,466 [INFO] ==============================
+
+2026-01-13 09:47:06,466 [INFO] Executing SELL on EUR_USD (Conf: 0.80, ATR: 0.00017)
+2026-01-13 09:47:06,466 [INFO] High Confidence (79.69%) -> Risk Bost +1.0%
+2026-01-13 09:47:06,467 [INFO] Final Risk Percentage: 2.00%
+2026-01-13 09:47:06,578 [WARNING] Calculated units 3874256 exceeds available margin cap (Limit: 55885). Capping.
+2026-01-13 09:47:06,578 [INFO] Risking $1937.13 (Bal: $96856.42, Free: $2941.37) -> 47967 Units
+2026-01-13 09:47:06,578 [INFO]  >> Placing Order: EUR_USD SELL | Units: 47967 | SL Dist: 0.00050
+2026-01-13 09:47:06,639 [INFO] Order created: {'orderCreateTransaction': {'id': '240', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '240', 'requestID': '115503259460904184', 'time': '2026-01-13T15:47:06.629710550Z', 'type': 'MARKET_ORDER', 'instrument': 'EUR_USD', 'units': '-47967', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.16433', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.16558', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '241', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '240', 'requestID': '115503259460904184', 'time': '2026-01-13T15:47:06.629710550Z', 'type': 'ORDER_FILL', 'orderID': '240', 'instrument': 'EUR_USD', 'units': '-47967', 'requestedUnits': '-47967', 'price': '1.16501', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '96856.4210', 'gainQuoteHomeConversionFactor': '1', 'lossQuoteHomeConversionFactor': '1', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '3.5975', 'fullVWAP': '1.16501', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '1.16501', 'tradeID': '241', 'units': '-47967', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '3.5975', 'initialMarginRequired': '1117.7078'}, 'fullPrice': {'closeoutBid': '1.16492', 'closeoutAsk': '1.16526', 'timestamp': '2026-01-13T15:47:03.679000263Z', 'bids': [{'price': '1.16501', 'liquidity': '500000'}, {'price': '1.16500', 'liquidity': '500000'}, {'price': '1.16499', 'liquidity': '2000000'}, {'price': '1.16498', 'liquidity': '2000000'}, {'price': '1.16497', 'liquidity': '5000000'}, {'price': '1.16495', 'liquidity': '10000000'}, {'price': '1.16492', 'liquidity': '10000000'}], 'asks': [{'price': '1.16516', 'liquidity': '500000'}, {'price': '1.16518', 'liquidity': '2500000'}, {'price': '1.16519', 'liquidity': '2000000'}, {'price': '1.16520', 'liquidity': '5000000'}, {'price': '1.16523', 'liquidity': '10000000'}, {'price': '1.16526', 'liquidity': '10000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '1'}, 'lossQuoteHome': {'factor': '1'}, 'gainBaseHome': {'factor': '1.15925460'}, 'lossBaseHome': {'factor': '1.17090540'}}}, 'relatedTransactionIDs': ['240', '241', '242', '243'], 'lastTransactionID': '243'}
+2026-01-13 09:47:06,639 [INFO] 
+==============================
+2026-01-13 09:47:06,639 [INFO] TRADE EXECUTED: SELL EUR_USD
+2026-01-13 09:47:06,639 [INFO] Units:    47,967
+2026-01-13 09:47:06,639 [INFO] Risk:     $1937.13 (2.00%)
+2026-01-13 09:47:06,639 [INFO] Target:   $2905.69
+2026-01-13 09:47:06,639 [INFO] ==============================
+
+2026-01-13 09:47:43,182 [INFO] Bot stopped by user.
+2026-01-13 11:33:32,515 [INFO] Starting Multi-Timeframe Scalping Bot (ATR & RSI Enhanced)...
+2026-01-13 11:33:32,516 [INFO] NewsAgent: Active (Gemini Configured)
+2026-01-13 11:33:32,516 [INFO] Connected to OANDA.
+2026-01-13 11:33:32,516 [INFO] Training Strategy on all pairs (M1/M5/M15) with 2000 candles...
+2026-01-13 11:33:32,516 [INFO] [EUR_USD] Fetching historical data...
+2026-01-13 11:33:34,043 [INFO] [EUR_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 11:33:35,027 [INFO] [EUR_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 11:33:35,028 [INFO] [GBP_USD] Fetching historical data...
+2026-01-13 11:33:35,516 [INFO] [GBP_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 11:33:36,489 [INFO] [GBP_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 11:33:36,489 [INFO] [USD_JPY] Fetching historical data...
+2026-01-13 11:33:36,740 [INFO] [USD_JPY] Preparing Training Data (M1/M5/M15)...
+2026-01-13 11:33:37,718 [INFO] [USD_JPY] ML Strategy trained successfully. Rows: 1981
+2026-01-13 11:33:37,718 [INFO] [AUD_USD] Fetching historical data...
+2026-01-13 11:33:38,665 [INFO] [AUD_USD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 11:33:39,638 [INFO] [AUD_USD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 11:33:39,638 [INFO] [USD_CAD] Fetching historical data...
+2026-01-13 11:33:39,873 [INFO] [USD_CAD] Preparing Training Data (M1/M5/M15)...
+2026-01-13 11:33:40,870 [INFO] [USD_CAD] ML Strategy trained successfully. Rows: 1981
+2026-01-13 11:33:40,870 [INFO] --- New Cycle ---
+2026-01-13 11:33:40,926 [INFO] Open Trades: 0 / 3
+2026-01-13 11:33:40,926 [INFO] Scanning market...
+2026-01-13 11:33:41,213 [INFO] [USD_CAD] Pred: 0 (Conf: 0.73) | ATR: 0.00012 | RSI: 47.6
+2026-01-13 11:33:41,231 [INFO] [GBP_USD] Pred: 0 (Conf: 0.61) | ATR: 0.00017 | RSI: 41.2
+2026-01-13 11:33:41,267 [INFO] [AUD_USD] Pred: 0 (Conf: 0.69) | ATR: 0.00011 | RSI: 52.5
+2026-01-13 11:33:41,268 [INFO] [USD_JPY] Pred: 0 (Conf: 0.81) | ATR: 0.01671 | RSI: 41.7
+2026-01-13 11:33:41,352 [INFO] Sentiment for USD_JPY: Long 64.66%, Short 35.34%
+2026-01-13 11:33:41,357 [INFO] Sentiment for AUD_USD: Long 62.31%, Short 37.69%
+2026-01-13 11:33:41,363 [INFO] Sentiment for GBP_USD: Long 58.83%, Short 41.17%
+2026-01-13 11:33:41,380 [INFO] Sentiment for USD_CAD: Long 63.32%, Short 36.68%
+2026-01-13 11:33:41,723 [INFO] [EUR_USD] Pred: 0 (Conf: 0.87) | ATR: 0.00014 | RSI: 49.2
+2026-01-13 11:33:41,788 [INFO] Sentiment for EUR_USD: Long 62.19%, Short 37.81%
+2026-01-13 11:33:46,124 [INFO] NewsAgent: Gemini Score: 0.00 (from 5 headlines)
+2026-01-13 11:33:46,182 [INFO] Candidate Found: GBP_USD (SELL, Conf: 0.61)
+2026-01-13 11:33:47,559 [INFO] NewsAgent: Gemini Score: 0.61 (from 5 headlines)
+2026-01-13 11:33:47,605 [INFO] Candidate Found: USD_JPY (SELL, Conf: 0.81)
+2026-01-13 11:33:48,495 [INFO] NewsAgent: Gemini Score: -0.04 (from 5 headlines)
+2026-01-13 11:33:48,539 [INFO] Candidate Found: EUR_USD (SELL, Conf: 0.87)
+2026-01-13 11:33:49,809 [INFO] NewsAgent: Gemini Score: -0.34 (from 5 headlines)
+2026-01-13 11:33:49,849 [INFO] Candidate Found: USD_CAD (SELL, Conf: 0.73)
+2026-01-13 11:33:53,497 [INFO] NewsAgent: Gemini Score: 0.14 (from 5 headlines)
+2026-01-13 11:33:53,548 [INFO] Candidate Found: AUD_USD (SELL, Conf: 0.69)
+2026-01-13 11:33:53,548 [INFO] Executing SELL on EUR_USD (Conf: 0.87, ATR: 0.00014)
+2026-01-13 11:33:53,548 [INFO] High Confidence (87.41%) -> Risk Bost +1.0%
+2026-01-13 11:33:53,548 [INFO] Final Risk Percentage: 2.00%
+2026-01-13 11:33:53,593 [WARNING] Calculated units 3888675 exceeds available margin cap (Limit: 1847120). Capping.
+2026-01-13 11:33:53,594 [INFO] Risking $1944.34 (Bal: $97216.88, Free: $97216.88) -> 1586280 Units
+2026-01-13 11:33:53,594 [INFO]  >> Placing Order: EUR_USD SELL | Units: 1586280 | SL Dist: 0.00050
+2026-01-13 11:33:53,711 [INFO] Order created: {'orderCreateTransaction': {'id': '250', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '250', 'requestID': '115503286335034421', 'time': '2026-01-13T17:33:53.651143028Z', 'type': 'MARKET_ORDER', 'instrument': 'EUR_USD', 'units': '-1586280', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.16369', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.16494', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '251', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '250', 'requestID': '115503286335034421', 'time': '2026-01-13T17:33:53.651143028Z', 'type': 'ORDER_FILL', 'orderID': '250', 'instrument': 'EUR_USD', 'units': '-1586280', 'requestedUnits': '-1586280', 'price': '1.16436', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '97216.8843', 'gainQuoteHomeConversionFactor': '1', 'lossQuoteHomeConversionFactor': '1', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '142.7652', 'fullVWAP': '1.16436', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '1.16436', 'tradeID': '251', 'units': '-1586280', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '142.7652', 'initialMarginRequired': '36942.8749'}, 'fullPrice': {'closeoutBid': '1.16428', 'closeoutAsk': '1.16463', 'timestamp': '2026-01-13T17:33:51.933567038Z', 'bids': [{'price': '1.16437', 'liquidity': '500000'}, {'price': '1.16436', 'liquidity': '500000'}, {'price': '1.16435', 'liquidity': '2000000'}, {'price': '1.16434', 'liquidity': '2000000'}, {'price': '1.16433', 'liquidity': '5000000'}, {'price': '1.16431', 'liquidity': '10000000'}, {'price': '1.16428', 'liquidity': '10000000'}], 'asks': [{'price': '1.16453', 'liquidity': '500000'}, {'price': '1.16455', 'liquidity': '2500000'}, {'price': '1.16456', 'liquidity': '2000000'}, {'price': '1.16457', 'liquidity': '5000000'}, {'price': '1.16460', 'liquidity': '10000000'}, {'price': '1.16463', 'liquidity': '10000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '1'}, 'lossQuoteHome': {'factor': '1'}, 'gainBaseHome': {'factor': '1.15862775'}, 'lossBaseHome': {'factor': '1.17027225'}}}, 'relatedTransactionIDs': ['250', '251', '252', '253'], 'lastTransactionID': '253'}
+2026-01-13 11:33:53,711 [INFO] 
+==============================
+2026-01-13 11:33:53,711 [INFO] TRADE EXECUTED: SELL EUR_USD
+2026-01-13 11:33:53,711 [INFO] Units:    1,586,280
+2026-01-13 11:33:53,711 [INFO] Risk:     $1944.34 (2.00%)
+2026-01-13 11:33:53,711 [INFO] Target:   $2916.51
+2026-01-13 11:33:53,711 [INFO] ==============================
+
+2026-01-13 11:33:53,711 [INFO] Executing SELL on USD_JPY (Conf: 0.81, ATR: 0.01671)
+2026-01-13 11:33:53,711 [INFO] High Confidence (81.25%) -> Risk Bost +1.0%
+2026-01-13 11:33:53,711 [INFO] Final Risk Percentage: 2.00%
+2026-01-13 11:33:53,757 [WARNING] Calculated units 6186571 exceeds available margin cap (Limit: 1142493). Capping.
+2026-01-13 11:33:53,757 [INFO] Risking $1944.34 (Bal: $97216.88, Free: $60131.24) -> 1142493 Units
+2026-01-13 11:33:53,757 [INFO]  >> Placing Order: USD_JPY SELL | Units: 1142493 | SL Dist: 0.05000
+2026-01-13 11:33:53,838 [INFO] Order created: {'orderCreateTransaction': {'id': '254', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '254', 'requestID': '97488887825061364', 'time': '2026-01-13T17:33:53.795774428Z', 'type': 'MARKET_ORDER', 'instrument': 'USD_JPY', 'units': '-1142493', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '159.017', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '159.142', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '255', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '254', 'requestID': '97488887825061364', 'time': '2026-01-13T17:33:53.795774428Z', 'type': 'ORDER_FILL', 'orderID': '254', 'instrument': 'USD_JPY', 'units': '-1142493', 'requestedUnits': '-1142493', 'price': '159.082', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '97216.8843', 'gainQuoteHomeConversionFactor': '0.00625434112', 'lossQuoteHomeConversionFactor': '0.00631719882', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '53.8609', 'fullVWAP': '159.082', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '159.082', 'tradeID': '255', 'units': '-1142493', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '53.8609', 'initialMarginRequired': '57124.6500'}, 'fullPrice': {'closeoutBid': '159.073', 'closeoutAsk': '159.107', 'timestamp': '2026-01-13T17:33:53.508408157Z', 'bids': [{'price': '159.083', 'liquidity': '500000'}, {'price': '159.082', 'liquidity': '500000'}, {'price': '159.081', 'liquidity': '2000000'}, {'price': '159.079', 'liquidity': '2000000'}, {'price': '159.077', 'liquidity': '5000000'}, {'price': '159.075', 'liquidity': '10000000'}, {'price': '159.073', 'liquidity': '10000000'}], 'asks': [{'price': '159.096', 'liquidity': '500000'}, {'price': '159.098', 'liquidity': '2500000'}, {'price': '159.100', 'liquidity': '2000000'}, {'price': '159.103', 'liquidity': '5000000'}, {'price': '159.105', 'liquidity': '10000000'}, {'price': '159.107', 'liquidity': '10000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '0.00625434112032'}, 'lossQuoteHome': {'factor': '0.00631719882002'}, 'gainBaseHome': {'factor': '1'}, 'lossBaseHome': {'factor': '1'}}}, 'relatedTransactionIDs': ['254', '255', '256', '257'], 'lastTransactionID': '257'}
+2026-01-13 11:33:53,838 [INFO] 
+==============================
+2026-01-13 11:33:53,838 [INFO] TRADE EXECUTED: SELL USD_JPY
+2026-01-13 11:33:53,838 [INFO] Units:    1,142,493
+2026-01-13 11:33:53,838 [INFO] Risk:     $1944.34 (2.00%)
+2026-01-13 11:33:53,838 [INFO] Target:   $2916.51
+2026-01-13 11:33:53,838 [INFO] ==============================
+
+2026-01-13 11:33:53,838 [INFO] Executing SELL on USD_CAD (Conf: 0.73, ATR: 0.00012)
+2026-01-13 11:33:53,838 [INFO] High Confidence (73.01%) -> Risk Bost +1.0%
+2026-01-13 11:33:53,838 [INFO] News Support (Score -0.34) -> Risk Bost +0.5%
+2026-01-13 11:33:53,838 [INFO] Final Risk Percentage: 2.50%
+2026-01-13 11:33:53,884 [WARNING] Calculated units 6753705 exceeds available margin cap (Limit: 56033). Capping.
+2026-01-13 11:33:53,884 [INFO] Risking $2430.42 (Bal: $97216.88, Free: $2949.14) -> 56033 Units
+2026-01-13 11:33:53,884 [INFO]  >> Placing Order: USD_CAD SELL | Units: 56033 | SL Dist: 0.00050
+2026-01-13 11:33:53,933 [INFO] Order created: {'orderCreateTransaction': {'id': '258', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '258', 'requestID': '115503286335034592', 'time': '2026-01-13T17:33:53.917675159Z', 'type': 'MARKET_ORDER', 'instrument': 'USD_CAD', 'units': '-56033', 'timeInForce': 'FOK', 'positionFill': 'DEFAULT', 'takeProfitOnFill': {'price': '1.38866', 'timeInForce': 'GTC'}, 'stopLossOnFill': {'price': '1.38991', 'timeInForce': 'GTC', 'triggerMode': 'TOP_OF_BOOK'}, 'reason': 'CLIENT_ORDER'}, 'orderFillTransaction': {'id': '259', 'accountID': '101-001-27078172-001', 'userID': 27078172, 'batchID': '258', 'requestID': '115503286335034592', 'time': '2026-01-13T17:33:53.917675159Z', 'type': 'ORDER_FILL', 'orderID': '258', 'instrument': 'USD_CAD', 'units': '-56033', 'requestedUnits': '-56033', 'price': '1.38935', 'pl': '0.0000', 'quotePL': '0', 'financing': '0.0000', 'baseFinancing': '0', 'commission': '0.0000', 'accountBalance': '97216.8843', 'gainQuoteHomeConversionFactor': '0.716115848237', 'lossQuoteHomeConversionFactor': '0.723312992441', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '3.6295', 'fullVWAP': '1.38935', 'reason': 'MARKET_ORDER', 'tradeOpened': {'price': '1.38935', 'tradeID': '259', 'units': '-56033', 'guaranteedExecutionFee': '0.0000', 'quoteGuaranteedExecutionFee': '0', 'halfSpreadCost': '3.6295', 'initialMarginRequired': '1120.6600'}, 'fullPrice': {'closeoutBid': '1.38905', 'closeoutAsk': '1.38984', 'timestamp': '2026-01-13T17:33:53.855716953Z', 'bids': [{'price': '1.38935', 'liquidity': '500000'}, {'price': '1.38934', 'liquidity': '500000'}, {'price': '1.38933', 'liquidity': '2000000'}, {'price': '1.38932', 'liquidity': '2000000'}, {'price': '1.38931', 'liquidity': '5000000'}, {'price': '1.38910', 'liquidity': '10000000'}, {'price': '1.38905', 'liquidity': '10000000'}], 'asks': [{'price': '1.38953', 'liquidity': '500000'}, {'price': '1.38955', 'liquidity': '2500000'}, {'price': '1.38957', 'liquidity': '2000000'}, {'price': '1.38958', 'liquidity': '5000000'}, {'price': '1.38979', 'liquidity': '10000000'}, {'price': '1.38984', 'liquidity': '10000000'}]}, 'homeConversionFactors': {'gainQuoteHome': {'factor': '0.71611584823723'}, 'lossQuoteHome': {'factor': '0.72331299244061'}, 'gainBaseHome': {'factor': '1'}, 'lossBaseHome': {'factor': '1'}}}, 'relatedTransactionIDs': ['258', '259', '260', '261'], 'lastTransactionID': '261'}
+2026-01-13 11:33:53,933 [INFO] 
+==============================
+2026-01-13 11:33:53,933 [INFO] TRADE EXECUTED: SELL USD_CAD
+2026-01-13 11:33:53,933 [INFO] Units:    56,033
+2026-01-13 11:33:53,933 [INFO] Risk:     $2430.42 (2.50%)
+2026-01-13 11:33:53,933 [INFO] Target:   $3645.63
+2026-01-13 11:33:53,933 [INFO] ==============================
+

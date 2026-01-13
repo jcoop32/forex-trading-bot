@@ -62,16 +62,9 @@ class RiskManager:
         self.logger.info(f"Final Risk Percentage: {final_risk:.2%}")
         return final_risk
 
-    def calculate_position_size(self, account_balance, risk_percentage, stop_loss_pips, current_price, pair="EUR_USD"):
+    def calculate_position_size(self, account_balance, margin_available, risk_percentage, stop_loss_pips, current_price, pair="EUR_USD"):
         """
         Calculate position size (units) based on risk amount.
-        
-        Formula: Units = (Balance * Risk%) / (StopLossDistance * ExchangeRate if needed)
-        For EUR/USD (USD Account):
-        Risk $ = Balance * %
-        Pip Value per Unit = 0.0001 (for standard lots logic, but here raw units)
-        Loss per Unit = StopLossPips (e.g. 0.0020)
-        Units = Risk $ / Loss per Unit
         """
         risk_amount = account_balance * risk_percentage
         
@@ -79,15 +72,10 @@ class RiskManager:
             return 0
             
         # 1. Standard Case: Quote Currency is Account Currency (e.g. EUR_USD for USD account)
-        # Loss per unit = stop_loss_pips
-        # Units = Risk / stop_loss_pips
         if pair.endswith("_USD"):
              units = risk_amount / stop_loss_pips
              
         # 2. JPY Case: Base Currency is Account Currency (e.g. USD_JPY for USD account)
-        # Loss per unit (in USD) = stop_loss_pips / current_price
-        # Units = Risk / (stop_loss_pips / current_price) 
-        #       = Risk * current_price / stop_loss_pips
         elif pair.startswith("USD_"):
              if current_price and current_price > 0:
                  units = (risk_amount * current_price) / stop_loss_pips
@@ -95,13 +83,38 @@ class RiskManager:
                  self.logger.warning(f"Invalid price for {pair}, defaulting to safe size 0.")
                  return 0
         else:
-             # Fallback/Crosses (Simplified - might be inaccurate but safer than crash)
-             # Assume roughly 1:1 or use standard (Safe underestimate usually)
+             # Fallback/Crosses
              self.logger.warning(f"Complex pair {pair} sizing. Using standard formula (approx).")
              units = risk_amount / stop_loss_pips
         
-        # Round down to nearest integer
-        units = int(units)
+        # --- MARGIN SAFETY CHECK ---
+        # Cap units to avoid insufficient margin. 
+        # Use margin_available instead of full balance.
+        # Apply 95% buffer to be safe against spread/price fluctuations.
         
-        self.logger.info(f"Risking ${risk_amount:.2f} (Bal: ${account_balance:.2f}) -> {units} Units")
+        MAX_LEVERAGE = 20
+        # Effectively, how many dollars worth of position can we buy with remaining margin?
+        # Max Nominal = MarginAvailable * Leverage * 0.95
+        max_nominal_value = margin_available * MAX_LEVERAGE * 0.95
+        
+        # Calculate current nominal value of the proposed units
+        current_nominal_value = 0.0
+        if pair.endswith("_USD"): # Base is NOT USD, e.g. EUR_USD
+            current_nominal_value = units * current_price
+        elif pair.startswith("USD_"): # Base IS USD
+            current_nominal_value = units
+        else:
+            current_nominal_value = units * current_price # Approx
+            
+        if current_nominal_value > max_nominal_value:
+            self.logger.warning(f"Calculated units {int(units)} exceeds available margin cap (Limit: {int(max_nominal_value)}). Capping.")
+            
+            # Reverse calc units from max_nominal_value
+            if pair.endswith("_USD"):
+                units = max_nominal_value / current_price
+            else:
+                units = max_nominal_value
+        
+        units = int(units)
+        self.logger.info(f"Risking ${risk_amount:.2f} (Bal: ${account_balance:.2f}, Free: ${margin_available:.2f}) -> {units} Units")
         return units

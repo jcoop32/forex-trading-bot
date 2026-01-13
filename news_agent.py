@@ -76,6 +76,7 @@ class NewsAgent:
 
         Determine if the news is Bullish (positive for the pair), Bearish (negative), or Neutral.
         Return ONLY a single float score between -1.0 (Extremely Bearish) and 1.0 (Extremely Bullish).
+        Do not write any words or explanations.
         0.0 is Neutral.
         Example output:
         0.45
@@ -93,7 +94,15 @@ class NewsAgent:
             
             if matches:
                  # Take the last number found, assuming it's the final score
-                score = float(matches[-1])
+                score = float(matches[0]) # Since we asked for ONLY a number, the first one should be it. But last is also safe if it rambles. Let's stick to last per prompt logic usually, but here 'matches' gives all.
+                # Actually, user requested re.search. Let's stick to the user's specific request for regex search if possible, or robust findall.
+                # User asked: re.search(r"[-+]?\d*\.\d+|[-+]?\d+", text)
+                # Let's Implement exactly that for compliance or better.
+                pass
+            
+            match = re.search(r"[-+]?\d*\.\d+|[-+]?\d+", text)
+            if match:
+                score = float(match.group())
             else:
                 self.logger.warning(f"NewsAgent: Could not extract score from: {text[:100]}...")
                 score = 0.0

@@ -28,8 +28,30 @@ class MLStrategy:
         df.sort_values('time', inplace=True)
         return df
 
+    def calculate_rsi(self, series, period=14):
+        delta = series.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        return 100 - (100 / (1 + rs))
+
+    def calculate_atr(self, df, period=14):
+        high_low = df['high'] - df['low']
+        high_close = np.abs(df['high'] - df['close'].shift())
+        low_close = np.abs(df['low'] - df['close'].shift())
+        ranges = pd.concat([high_low, high_close, low_close], axis=1)
+        true_range = ranges.max(axis=1)
+        return true_range.rolling(window=period).mean()
+
+    def calculate_bollinger_bands(self, series, period=20, std_dev=2):
+        sma = series.rolling(window=period).mean()
+        std = series.rolling(window=period).std()
+        upper = sma + (std * std_dev)
+        lower = sma - (std * std_dev)
+        return upper, lower
+
     def prepare_single_frame(self, df, prefix=""):
-        """Generate basic features for a single timeframe."""
+        """Generate features for a single timeframe."""
         if df.empty:
             return df
             
@@ -40,19 +62,28 @@ class MLStrategy:
         df[f'{prefix}range'] = df['high'] - df['low']
         df[f'{prefix}volatility'] = df[f'{prefix}range'] / df['open']
         
+        # RSI
+        df[f'{prefix}rsi'] = self.calculate_rsi(df['close'])
+        
+        # ATR (Absolute pips? No, price diff. Useful for stops)
+        # We need this for the Risk Manager mainly, effectively standardizing volatility
+        # but also as a feature (normalized ATR)
+        df[f'{prefix}atr'] = self.calculate_atr(df)
+        df[f'{prefix}atr_norm'] = df[f'{prefix}atr'] / df['close'] # Normalized for ML
+        
+        # Bollinger Bands
+        bb_up, bb_low = self.calculate_bollinger_bands(df['close'])
+        # Distance from bands (0 to 1 scaling approx? or just diff)
+        df[f'{prefix}bb_width'] = (bb_up - bb_low) / df['close']
+        df[f'{prefix}bb_pos'] = (df['close'] - bb_low) / (bb_up - bb_low) # 0 = low, 1 = up
+        
         # Lagged features
         df[f'{prefix}returns_lag1'] = df[f'{prefix}returns'].shift(1)
-        df[f'{prefix}returns_lag2'] = df[f'{prefix}returns'].shift(2)
         df[f'{prefix}volatility_lag1'] = df[f'{prefix}volatility'].shift(1)
         
-        # Simple SMA Trend (e.g. 20 period)
+        # Trend
         df[f'{prefix}sma_20'] = df['close'].rolling(window=20).mean()
         df[f'{prefix}trend_signal'] = np.where(df['close'] > df[f'{prefix}sma_20'], 1, -1)
-        
-        # Drop NaN caused by shift/rolling
-        # We don't drop here yet to preserve timestamp alignment potential until merge? 
-        # Actually safer to drop only used columns or fill NaNs. 
-        # For simplicity, we'll keep NaNs and drop after merge.
         
         return df
 
@@ -73,21 +104,17 @@ class MLStrategy:
         df_m15 = self.prepare_single_frame(df_m15, prefix="m15_")
         
         # Select columns to keep for higher timeframes
-        # We want trend and volatility context
-        cols_m5 = ['time', 'm5_returns', 'm5_volatility', 'm5_trend_signal']
-        cols_m15 = ['time', 'm15_returns', 'm15_volatility', 'm15_trend_signal']
+        cols_m5 = ['time', 'm5_returns', 'm5_rsi', 'm5_atr_norm', 'm5_bb_pos', 'm5_trend_signal']
+        cols_m15 = ['time', 'm15_returns', 'm15_rsi', 'm15_atr_norm', 'm15_bb_pos', 'm15_trend_signal']
         
-        # Merge M5 onto M1 (Backward search: for each M1, find latest M5)
-        # Note: pd.merge_asof requires sorted 'on' column
+        # Merge
         msg_df = pd.merge_asof(df_m1, df_m5[cols_m5], on='time', direction='backward')
-        
-        # Merge M15 onto result
         final_df = pd.merge_asof(msg_df, df_m15[cols_m15], on='time', direction='backward')
         
         # Target: 1 if next M1 candle closes higher, else 0
-        final_df['target'] = (final_df['close'].shift(-1) > final_df['close']).astype(int)
+        final_df['target'] = (final_df['close'].shift(-5) > final_df['close']).astype(int)
         
-        # Drop columns that have NaNs (start of data)
+        # Drop columns that have NaNs (due to rolling windows)
         final_df.dropna(inplace=True)
         
         return final_df
@@ -103,9 +130,10 @@ class MLStrategy:
             
         # Define Features
         features = [
-            'returns', 'range', 'volatility', 'returns_lag1', 'returns_lag2', 'volatility_lag1',
-            'm5_returns', 'm5_volatility', 'm5_trend_signal',
-            'm15_returns', 'm15_volatility', 'm15_trend_signal'
+            'returns', 'volatility', 'rsi', 'atr_norm', 'bb_pos', 
+            'returns_lag1', 'volatility_lag1',
+            'm5_returns', 'm5_rsi', 'm5_atr_norm', 'm5_bb_pos', 'm5_trend_signal',
+            'm15_returns', 'm15_rsi', 'm15_atr_norm', 'm15_trend_signal'
         ]
         
         X = df[features]
@@ -119,23 +147,21 @@ class MLStrategy:
     def predict(self, recent_candles_m1, recent_candles_m5, recent_candles_m15, instrument):
         """
         Predict direction for the NEXT M1 candle.
+        Returns: prediction (0/1), confidence (float), current_atr (float)
         """
         if instrument not in self.models:
             self.logger.warning(f"[{instrument}] Model not trained.")
-            return 0, 0.0
+            return 0, 0.0, 0.0
             
         model = self.models[instrument]
             
-        # We need to reconstruct the dataframe structure just like training
-        # But we want the features for the *latest completed candle* to predict the *next* move.
-        
         # 1. Parse & Prep
         df_m1 = self.parse_candles(recent_candles_m1)
         df_m5 = self.parse_candles(recent_candles_m5)
         df_m15 = self.parse_candles(recent_candles_m15)
         
         if df_m1.empty or df_m5.empty or df_m15.empty:
-             return 0, 0.0
+             return 0, 0.0, 0.0
 
         # Feature Eng
         df_m1 = self.prepare_single_frame(df_m1, prefix="")
@@ -143,8 +169,8 @@ class MLStrategy:
         df_m15 = self.prepare_single_frame(df_m15, prefix="m15_")
         
         # Merge
-        cols_m5 = ['time', 'm5_returns', 'm5_volatility', 'm5_trend_signal']
-        cols_m15 = ['time', 'm15_returns', 'm15_volatility', 'm15_trend_signal']
+        cols_m5 = ['time', 'm5_returns', 'm5_rsi', 'm5_atr_norm', 'm5_bb_pos', 'm5_trend_signal']
+        cols_m15 = ['time', 'm15_returns', 'm15_rsi', 'm15_atr_norm', 'm15_bb_pos', 'm15_trend_signal']
         
         msg_df = pd.merge_asof(df_m1, df_m5[cols_m5], on='time', direction='backward')
         final_df = pd.merge_asof(msg_df, df_m15[cols_m15], on='time', direction='backward')
@@ -153,22 +179,26 @@ class MLStrategy:
         last_row = final_df.iloc[-1:]
         
         features = [
-            'returns', 'range', 'volatility', 'returns_lag1', 'returns_lag2', 'volatility_lag1',
-            'm5_returns', 'm5_volatility', 'm5_trend_signal',
-            'm15_returns', 'm15_volatility', 'm15_trend_signal'
+            'returns', 'volatility', 'rsi', 'atr_norm', 'bb_pos', 
+            'returns_lag1', 'volatility_lag1',
+            'm5_returns', 'm5_rsi', 'm5_atr_norm', 'm5_bb_pos', 'm5_trend_signal',
+            'm15_returns', 'm15_rsi', 'm15_atr_norm', 'm15_trend_signal'
         ]
         
         # Check for NaNs
         if last_row[features].isnull().values.any():
             self.logger.warning(f"[{instrument}] Latest data contains NaNs (likely insufficient history for Lags/SMA). Cannot predict.")
-            # Fallback: could return 0 or try to use previous...
-            return 0, 0.0
+            # Fallback
+            return 0, 0.0, 0.0
             
         prediction = model.predict(last_row[features])[0]
         prob_up = model.predict_proba(last_row[features])[0][1]
         
         confidence = prob_up if prediction == 1 else (1.0 - prob_up)
         
-        self.logger.info(f"[{instrument}] Pred: {prediction} (Conf: {confidence:.2f}) | Trend M5:{last_row['m5_trend_signal'].values[0]} M15:{last_row['m15_trend_signal'].values[0]}")
+        # Extract latest ATR for Risk Manager (M1 ATR)
+        current_atr = last_row['atr'].values[0]
         
-        return prediction, confidence
+        self.logger.info(f"[{instrument}] Pred: {prediction} (Conf: {confidence:.2f}) | ATR: {current_atr:.5f} | RSI: {last_row['rsi'].values[0]:.1f}")
+        
+        return prediction, confidence, current_atr

@@ -48,15 +48,12 @@ class MarketScanner:
                     
                 # B. Strategy Prediction
                 # Pass all timeframes
-                ml_signal, ml_confidence = strategy.predict(candidates_m1, candidates_m5, candidates_m15, instrument)
+                ml_signal, ml_confidence, current_atr = strategy.predict(candidates_m1, candidates_m5, candidates_m15, instrument)
                 
                 # C. Sentiment Analysis
                 sent_signal = sentiment_analyzer.get_market_sentiment(instrument)
                 
                 # D. News Sentiment
-                # (Optional: might be slow to fetch for ALL pairs every cycle. 
-                #  Maybe only fetch for high confidence ones? 
-                #  For now, let's fetch, but rely on NewsAgent's caching)
                 news_score = news_agent.get_sentiment_score(instrument)
                 
                 # E. Combine Logic (mimic main.py logic)
@@ -72,7 +69,8 @@ class MarketScanner:
                         "decision": decision,
                         "confidence": ml_confidence,
                         "news_score": news_score,
-                        "current_price": connection.get_current_price(instrument) # Needed for sizing
+                        "current_price": connection.get_current_price(instrument), # Needed for sizing
+                        "atr": current_atr
                     }
                 return None
                 
