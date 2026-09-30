@@ -2,6 +2,7 @@ import sqlite3
 import os
 import logging
 import threading
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
@@ -35,8 +36,19 @@ class TradeLedger:
         if self.is_postgres:
             if not POSTGRES_AVAILABLE:
                 raise ImportError("psycopg2 is required for PostgreSQL but not installed.")
-            self._pool = SimpleConnectionPool(minconn=2, maxconn=10, dsn=self.database_url)
-            logger.info("TradeLedger: Configured with PostgreSQL backend (pooled, 2-10 connections).")
+            # Retry connection pool creation — Postgres may still be starting in K8s
+            max_retries = 10
+            for attempt in range(1, max_retries + 1):
+                try:
+                    self._pool = SimpleConnectionPool(minconn=2, maxconn=10, dsn=self.database_url)
+                    logger.info("TradeLedger: Configured with PostgreSQL backend (pooled, 2-10 connections).")
+                    break
+                except psycopg2.OperationalError as e:
+                    if attempt == max_retries:
+                        logger.error(f"TradeLedger: Failed to connect to PostgreSQL after {max_retries} attempts.")
+                        raise
+                    logger.warning(f"TradeLedger: PostgreSQL not ready (attempt {attempt}/{max_retries}): {e}")
+                    time.sleep(3)
         else:
             logger.info(f"TradeLedger: Configured with SQLite backend ({self.db_path}).")
             os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
