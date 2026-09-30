@@ -3,9 +3,45 @@ services:
     build: .
     container_name: forex-trading-bot
     restart: unless-stopped
-    # Mount the .env file from the host
+    ports:
+      - "8000:8000"
     env_file:
       - .env
-    # Persist logs to the host
+    environment:
+      - DATABASE_URL=postgresql://forex:forexpassword@postgres:5432/forex
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_DIR=/app/data
     volumes:
-      - ./trading_bot.log:/app/trading_bot.log
+      - bot_data:/app/data
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: forex-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=forex
+      - POSTGRES_USER=forex
+      - POSTGRES_PASSWORD=forexpassword
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: forex-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  bot_data:
+  postgres_data:
+  redis_data:

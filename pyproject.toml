@@ -1,7 +1,24 @@
 [project]
 name = "forex-trading-bot"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.2.0"
+description = "High-precision Forex technical scalper bot for OANDA"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "oandapyV20",
+    "pandas",
+    "numpy",
+    "python-dotenv",
+    "requests",
+    "pytest",
+    "fastapi>=0.142.2",
+    "uvicorn>=0.54.0",
+    "httpx>=0.28.1",
+    "psycopg2-binary>=2.9.13",
+    "redis>=8.1.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

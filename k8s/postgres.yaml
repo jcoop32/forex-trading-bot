@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: forex-postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forex-postgres
+  labels:
+    app: forex-postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: forex-postgres
+  template:
+    metadata:
+      labels:
+        app: forex-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: Always
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "forex"
+            - name: POSTGRES_USER
+              value: "forex"
+            # Crucial Longhorn fix: Subfolder prevents initdb crashes from lost+found
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          envFrom:
+            - secretRef:
+                name: forex-bot-secrets
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: forex-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forex-postgres
+  labels:
+    app: forex-postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: forex-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432

@@ -4,69 +4,45 @@ from market_scanner import MarketScanner
 
 class TestMarketScanner(unittest.TestCase):
     def setUp(self):
-        self.instruments = ["EUR_USD", "GBP_USD", "USD_JPY"]
-        self.scanner = MarketScanner(self.instruments)
-        
-        # Mocks
-        self.conn = MagicMock()
-        self.strategy = MagicMock()
-        self.sentiment = MagicMock()
-        self.news_agent = MagicMock()
-        
-        # Default mock returns
-        self.conn.get_candles.return_value = [{'mid': {'c': '1.0'}}] # partial candle mock
-        self.conn.get_current_price.return_value = 1.1000
-        self.news_agent.get_sentiment_score.return_value = 0.5
-        self.strategy.predict.return_value = (0, 0.0) # Default safe return
+        self.scanner = MarketScanner(["EUR_USD", "GBP_USD"])
+        self.mock_conn = MagicMock()
+        self.mock_strategy = MagicMock()
 
-    def test_scan_finds_opportunities(self):
-        # Setup specific returns for different pairs to ensure sorting
-        
-        # EUR_USD: BUY, Conf 0.9 (Best)
-        # GBP_USD: SELL, Conf 0.7 
-        # USD_JPY: HOLD (No signal)
-        
-        def strategy_predict_side_effect(c1, c2, c3, instrument):
-            if instrument == "EUR_USD": return 1, 0.9  # BUY Signal (1), High Conf
-            if instrument == "GBP_USD": return 0, 0.7  # SELL Signal (0), Med Conf
-            if instrument == "USD_JPY": return 0, 0.4  # SELL Signal (0), Low Conf
-            return 0, 0.0
+    def test_spread_gate_rejects_wide_spread(self):
+        # Quote with 2.5 pips spread on EUR_USD (max allowed is 1.2)
+        self.mock_conn.get_pricing_quote.return_value = {
+            "bid": 1.10000,
+            "ask": 1.10025,
+            "mid": 1.10012,
+            "spread_pips": 2.5
+        }
 
-        self.strategy.predict.side_effect = strategy_predict_side_effect
-        
-        self.sentiment.get_market_sentiment.return_value = "NEUTRAL"
-        
-        # Run scan
-        candidates = self.scanner.scan(self.conn, self.strategy, self.sentiment, self.news_agent, [])
-        
-        # Logic check: 
-        # EUR_USD: ML=1, Sent=Neutral -> BUY
-        # GBP_USD: ML=0, Sent=Neutral -> SELL
-        # USD_JPY: ML=0, Sent=Neutral -> SELL
-        
-        # The candidates list should have 3 items.
-        self.assertEqual(len(candidates), 3)
-        
-        # Ensure sorting by confident
-        self.assertEqual(candidates[0]['instrument'], "EUR_USD")
-        self.assertEqual(candidates[0]['confidence'], 0.9)
-        
-        self.assertEqual(candidates[1]['instrument'], "GBP_USD")
-        self.assertEqual(candidates[1]['confidence'], 0.7)
+        candidates = self.scanner.scan(self.mock_conn, self.mock_strategy)
+        self.assertEqual(len(candidates), 0)
+        # Verify candles were never even fetched because spread gate stopped it early!
+        self.mock_conn.get_candles.assert_not_called()
 
-    def test_scan_skips_open_trades(self):
-        # Scan should skip EUR_USD if it's already open
-        open_trades = [{'instrument': 'EUR_USD', 'unrealizedPL': '10'}]
-        
-        active_instruments = {t['instrument'] for t in open_trades}
-        # Mock logic mimics scan() internal skipping
-        
-        # Run
-        candidates = self.scanner.scan(self.conn, self.strategy, self.sentiment, self.news_agent, open_trades)
-        
-        # Candidates should NOT contain EUR_USD
-        found_eur = any(c['instrument'] == 'EUR_USD' for c in candidates)
-        self.assertFalse(found_eur)
+    def test_spread_gate_allows_tight_spread_and_finds_candidate(self):
+        # Quote with 0.8 pips spread on EUR_USD (within 1.2 limit)
+        self.mock_conn.get_pricing_quote.return_value = {
+            "bid": 1.10000,
+            "ask": 1.10008,
+            "mid": 1.10004,
+            "spread_pips": 0.8
+        }
+        self.mock_conn.get_candles.return_value = [{"dummy": "candle"}] * 40
+        # Strategy outputs strong BUY
+        self.mock_strategy.evaluate.return_value = ("BUY", 0.85, 0.00060, 0.00060, 0.00070)
+
+        candidates = self.scanner.scan(self.mock_conn, self.mock_strategy)
+        self.assertGreaterEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["decision"], "BUY")
+        self.assertEqual(candidates[0]["confidence"], 0.85)
+
+    def test_skips_already_active_instruments(self):
+        candidates = self.scanner.scan(self.mock_conn, self.mock_strategy, open_instruments={"EUR_USD", "GBP_USD"})
+        self.assertEqual(len(candidates), 0)
+        self.mock_conn.get_pricing_quote.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()

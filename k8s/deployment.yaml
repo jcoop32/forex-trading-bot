@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forex-trading-bot
+  labels:
+    app: forex-trading-bot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: forex-trading-bot
+  template:
+    metadata:
+      labels:
+        app: forex-trading-bot
+    spec:
+      containers:
+        - name: bot
+          image: jcooper23/forex-trading-bot:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: LOG_DIR
+              value: "/app/data"
+            - name: API_PORT
+              value: "8000"
+            - name: REDIS_URL
+              value: "redis://forex-redis:6379/0"
+            - name: DATABASE_URL
+              value: "postgresql://forex:$(POSTGRES_PASSWORD)@forex-postgres:5432/forex"
+          envFrom:
+            - secretRef:
+                name: forex-bot-secrets
+          volumeMounts:
+            - name: bot-data
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: bot-data
+          persistentVolumeClaim:
+            claimName: forex-trading-bot-data

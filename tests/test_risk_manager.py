@@ -1,46 +1,51 @@
 import unittest
-from unittest.mock import MagicMock
 from risk_manager import RiskManager
 
 class TestRiskManager(unittest.TestCase):
     def setUp(self):
-        self.rm = RiskManager()
-        self.rm.logger = MagicMock()
+        self.rm = RiskManager(target_balance=1000.0)
 
-    def test_size_eur_usd(self):
-        # Account: 10,000 USD, Margin Avail: 10,000
-        # Risk: 1% = 100 USD
-        # SL Dist: 0.0008 (8 pips)
-        # Pair: EUR_USD (Quote USD)
-        
-        # Units = Risk / Dist = 100 / 0.0008 = 125,000
-        # Check Margin: 125,000 * 1.10 = $137,500 Nominal. Max = 10,000 * 20 * 0.95 = 190,000. OK.
-        units = self.rm.calculate_position_size(10000, 10000, 0.01, 0.0008, 1.10, "EUR_USD")
-        self.assertEqual(units, 125000)
+    def test_units_on_standard_balance(self):
+        # On $1,000 balance with ample margin, should return 10,000 units
+        units = self.rm.calculate_units(account_balance=1000.0, margin_available=600.0, pair="EUR_USD")
+        self.assertEqual(units, 10000)
 
-    def test_size_usd_jpy(self):
-        # Account: 10,000 USD
-        # Risk: 1% = 100 USD
-        # SL Dist: 0.08 (8 pips for JPY)
-        # Pair: USD_JPY (Base USD)
-        # Price: 150.00
-        
-        # Units = 187,500. Nominal = 187,500 USD. Max = 190,000. OK.
-        units = self.rm.calculate_position_size(10000, 10000, 0.01, 0.08, 150.00, "USD_JPY")
-        self.assertEqual(units, 187500)
+    def test_units_on_low_margin(self):
+        # Margin tight (< 350 but >= 180), drops to 5,000 units
+        units = self.rm.calculate_units(account_balance=1000.0, margin_available=250.0, pair="EUR_USD")
+        self.assertEqual(units, 5000)
 
-    def test_margin_cap(self):
-        # Test capping logic
-        # Balance 10k, Margin Avail ONLY 1k (lots of open trades)
-        # Risk 1% = 100 USD.
-        # SL Dist 0.0010 (10 pips).
-        # Target Units = 100 / 0.0010 = 100,000 Units.
-        
-        # Max Nominal = 1,000 * 20 * 0.95 = 19,000 USD.
-        # EUR_USD Price 1.1. Max Units = 19,000 / 1.1 = 17,272.
-        
-        units = self.rm.calculate_position_size(10000, 1000, 0.01, 0.0010, 1.10, "EUR_USD")
-        self.assertEqual(units, 17272)
+    def test_units_on_insufficient_margin(self):
+        # Margin < 180, aborts with 0 units
+        units = self.rm.calculate_units(account_balance=1000.0, margin_available=100.0, pair="EUR_USD")
+        self.assertEqual(units, 0)
+
+    def test_units_scale_down_on_small_balance(self):
+        # Balance < $700, trades half-size (5,000 units)
+        units = self.rm.calculate_units(account_balance=650.0, margin_available=500.0, pair="EUR_USD")
+        self.assertEqual(units, 5000)
+
+    def test_calculate_sl_tp_prices_standard(self):
+        sl, tp = self.rm.calculate_sl_tp_prices(
+            decision="BUY",
+            current_price=1.10000,
+            sl_dist=0.00060,  # 6 pips
+            tp_dist=0.00070,  # 7 pips
+            instrument="EUR_USD"
+        )
+        self.assertAlmostEqual(sl, 1.09940, places=5)
+        self.assertAlmostEqual(tp, 1.10070, places=5)
+
+    def test_calculate_sl_tp_prices_jpy(self):
+        sl, tp = self.rm.calculate_sl_tp_prices(
+            decision="SELL",
+            current_price=150.000,
+            sl_dist=0.060,  # 6 pips on JPY
+            tp_dist=0.070,  # 7 pips on JPY
+            instrument="USD_JPY"
+        )
+        self.assertAlmostEqual(sl, 150.060, places=3)
+        self.assertAlmostEqual(tp, 149.930, places=3)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,97 +1,97 @@
 import logging
 import concurrent.futures
-import time
 
 class MarketScanner:
-    def __init__(self, instruments):
+    """
+    Concurrent market scanner equipped with strict real-time Spread Gating.
+    Scans major currency pairs and surfaces high-confidence technical setups.
+    """
+    def __init__(self, instruments=None):
         self.logger = logging.getLogger("trading_bot")
-        self.instruments = instruments
-        self.TIMEFRAME = "M1" # Use one timeframe for simplicity in this version
+        self.instruments = instruments or ["EUR_USD", "GBP_USD", "USD_JPY", "USD_CAD", "AUD_USD"]
+        
+        # Max allowed spread in pips before aborting
+        self.MAX_SPREAD_MAJORS = 1.2    # EUR_USD, GBP_USD
+        self.MAX_SPREAD_CROSSES = 1.8   # USD_JPY, USD_CAD, AUD_USD
 
-    def scan(self, connection, strategy, sentiment_analyzer, news_agent, open_trades):
+    def _get_max_allowed_spread(self, instrument):
+        if instrument in ["EUR_USD", "GBP_USD"]:
+            return self.MAX_SPREAD_MAJORS
+        return self.MAX_SPREAD_CROSSES
+
+    def scan(self, connection, strategy, open_instruments=None):
         """
-        Scans all instruments concurrently to find the best trading opportunities.
+        Scan all configured pairs concurrently.
         
         Args:
             connection (OandaConnection): API connection
-            strategy (MLStrategy): Strategy instance
-            sentiment_analyzer (SentimentAnalyzer): Sentiment tool
-            news_agent (NewsAgent): News tool
-            open_trades (list): List of currently open trade objects from OANDA
+            strategy (TechnicalScalpStrategy): Technical strategy instance
+            open_instruments (set): Set of instruments with active open trades to skip
             
         Returns:
-            list: List of dicts [{"instrument": "EUR_USD", "signal": "BUY", "confidence": 0.85, "news_score": 0.5}, ...]
-                  Sorted by confidence (descending).
+            list: List of trade candidates sorted by confidence (descending)
         """
-        
-        # 1. Identify pairs that are already active to skip or manage
-        active_instruments = {t['instrument'] for t in open_trades}
-        
+        open_instruments = open_instruments or set()
         candidates = []
-        
-        # 2. Define the worker function for a single pair
+
         def analyze_pair(instrument):
-            if instrument in active_instruments:
-                # We already have a trade, skip scanning for new entry to avoid complexity
-                # (Or we could scan for exit signals, but let's stick to entry finding for now)
+            if instrument in open_instruments:
                 return None
-            
+
             try:
-                # A. Fetch Data (Multi-Timeframe)
-                # We need M1, M5, M15
-                candidates_m1 = connection.get_candles(instrument, count=50, granularity="M1")
-                candidates_m5 = connection.get_candles(instrument, count=50, granularity="M5")
-                candidates_m15 = connection.get_candles(instrument, count=50, granularity="M15")
-                
-                if not candidates_m1 or not candidates_m5 or not candidates_m15:
+                # 1. Real-time Pricing & Spread Gate
+                quote = connection.get_pricing_quote(instrument)
+                if not quote:
                     return None
-                    
-                # B. Strategy Prediction
-                # Pass all timeframes
-                ml_signal, ml_confidence, current_atr = strategy.predict(candidates_m1, candidates_m5, candidates_m15, instrument)
-                
-                # C. Sentiment Analysis
-                sent_signal = sentiment_analyzer.get_market_sentiment(instrument)
-                
-                # D. News Sentiment
-                news_score = news_agent.get_sentiment_score(instrument)
-                
-                # E. Combine Logic (mimic main.py logic)
-                decision = "HOLD"
-                if ml_signal == 1 and sent_signal != "SELL":
-                    decision = "BUY"
-                elif ml_signal == 0 and sent_signal != "BUY":
-                    decision = "SELL"
-                
-                if decision != "HOLD":
+
+                spread = quote["spread_pips"]
+                max_spread = self._get_max_allowed_spread(instrument)
+
+                if spread > max_spread:
+                    self.logger.info(f"[{instrument}] Spread {spread:.1f} pips exceeds max {max_spread:.1f}. Skipping.")
+                    return None
+
+                # 2. Fetch Multi-Timeframe Candles
+                c_m1 = connection.get_candles(instrument, count=40, granularity="M1")
+                c_m5 = connection.get_candles(instrument, count=40, granularity="M5")
+                c_m15 = connection.get_candles(instrument, count=40, granularity="M15")
+
+                if not c_m1 or not c_m5:
+                    return None
+
+                # 3. Strategy Evaluation
+                decision, conf, atr, sl_dist, tp_dist = strategy.evaluate(c_m1, c_m5, c_m15, instrument)
+
+                if decision in ["BUY", "SELL"]:
                     return {
                         "instrument": instrument,
                         "decision": decision,
-                        "confidence": ml_confidence,
-                        "news_score": news_score,
-                        "current_price": connection.get_current_price(instrument), # Needed for sizing
-                        "atr": current_atr
+                        "confidence": conf,
+                        "current_price": quote["mid"],
+                        "spread_pips": spread,
+                        "atr": atr,
+                        "sl_dist": sl_dist,
+                        "tp_dist": tp_dist
                     }
                 return None
-                
+
             except Exception as e:
-                self.logger.error(f"Error analyzing {instrument}: {e}")
+                self.logger.error(f"Error scanning {instrument}: {e}")
                 return None
 
-        # 3. specific Concurrency
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            future_to_instrument = {executor.submit(analyze_pair, instr): instr for instr in self.instruments}
-            
-            for future in concurrent.futures.as_completed(future_to_instrument):
-                instr = future_to_instrument[future]
+        # Concurrently analyze pairs
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.instruments)) as executor:
+            futures = {executor.submit(analyze_pair, inst): inst for inst in self.instruments}
+            for future in concurrent.futures.as_completed(futures):
+                inst = futures[future]
                 try:
-                    result = future.result()
-                    if result:
-                        candidates.append(result)
-                        self.logger.info(f"Candidate Found: {result['instrument']} ({result['decision']}, Conf: {result['confidence']:.2f})")
+                    res = future.result()
+                    if res:
+                        candidates.append(res)
+                        self.logger.info(f"Candidate: {res['instrument']} {res['decision']} (Conf: {res['confidence']:.2f}, Spread: {res['spread_pips']:.1f}p)")
                 except Exception as e:
-                    self.logger.error(f"Scanner exception for {instr}: {e}")
+                    self.logger.error(f"Scanner exception for {inst}: {e}")
 
-        # 4. Sort candidates by confidence
-        candidates.sort(key=lambda x: x['confidence'], reverse=True)
+        # Sort by confidence descending
+        candidates.sort(key=lambda x: x["confidence"], reverse=True)
         return candidates

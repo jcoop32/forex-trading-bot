@@ -28,14 +28,14 @@ class OandaConnection:
         params = {
             "count": count,
             "granularity": granularity,
-            "price": "M" # Midpoint
+            "price": "M"  # Midpoint
         }
         r = instruments.InstrumentsCandles(instrument=instrument, params=params)
         try:
             self.api.request(r)
-            return r.response.get("candles")
+            return r.response.get("candles", [])
         except Exception as e:
-            self.logger.error(f"Error fetching candles: {e}")
+            self.logger.error(f"Error fetching candles for {instrument}: {e}")
             return []
 
     def get_account_details(self):
@@ -43,7 +43,6 @@ class OandaConnection:
         r = accounts.AccountSummary(accountID=self.account_id)
         try:
             self.api.request(r)
-            # We use 'marginAvailable' for safety checks and 'balance' for risk sizing
             balance = float(r.response['account']['balance'])
             margin_avail = float(r.response['account']['marginAvailable'])
             return balance, margin_avail
@@ -51,27 +50,45 @@ class OandaConnection:
             self.logger.error(f"Error fetching account details: {e}")
             return 0.0, 0.0
 
-    def get_current_price(self, instrument):
-        """Fetch current price for an instrument."""
+    def get_pricing_quote(self, instrument):
+        """
+        Fetch real-time bid, ask, mid, and spread in pips.
+        Returns dict with 'bid', 'ask', 'mid', 'spread_pips', or None.
+        """
         params = {"instruments": instrument}
         r = pricing.PricingInfo(accountID=self.account_id, params=params)
         try:
             self.api.request(r)
-            prices = r.response.get("prices")
-            if prices:
-                # return the closeoutBid as a simple 'current price' proxy for selling or closeoutAsk for buying
-                # For simplicity, returning the mid of the first price entry
-                p = prices[0]
-                return (float(p['bids'][0]['price']) + float(p['asks'][0]['price'])) / 2.0
-            return None
+            prices = r.response.get("prices", [])
+            if not prices:
+                return None
+            p = prices[0]
+            bid = float(p['bids'][0]['price'])
+            ask = float(p['asks'][0]['price'])
+            mid = (bid + ask) / 2.0
+            
+            pip_unit = 0.01 if "JPY" in instrument else 0.0001
+            spread_pips = (ask - bid) / pip_unit
+            
+            return {
+                "bid": bid,
+                "ask": ask,
+                "mid": mid,
+                "spread_pips": round(spread_pips, 2)
+            }
         except Exception as e:
-            self.logger.error(f"Error fetching price: {e}")
+            self.logger.error(f"Error fetching pricing quote for {instrument}: {e}")
             return None
+
+    def get_current_price(self, instrument):
+        """Fetch mid price for an instrument."""
+        quote = self.get_pricing_quote(instrument)
+        if quote:
+            return quote["mid"]
+        return None
 
     def create_order(self, instrument, units, stop_loss_price=None, take_profit_price=None):
         """Place a market order with optional SL/TP."""
-        
-        # Ensure units is integer (OANDA requires int for units)
         units = int(units)
         
         data = {
@@ -81,11 +98,7 @@ class OandaConnection:
             "positionFill": "DEFAULT"
         }
 
-        if "JPY" in instrument:
-            precision = 3
-        else:
-            precision = 5
-
+        precision = 3 if "JPY" in instrument else 5
 
         if stop_loss_price:
             data["stopLossOnFill"] = {"price": f"{stop_loss_price:.{precision}f}"}
@@ -96,18 +109,15 @@ class OandaConnection:
         r = orders.OrderCreate(accountID=self.account_id, data={"order": data})
         try:
             self.api.request(r)
-            self.logger.info(f"Order created: {r.response}")
+            self.logger.info(f"Order created for {instrument} ({units}u): {r.response}")
             return r.response
         except Exception as e:
-            self.logger.error(f"Error creating order: {e}")
+            self.logger.error(f"Error creating order for {instrument}: {e}")
             return None
 
     def get_open_trades(self):
-        """
-        Fetch all open trades.
-        Returns a list of trade dictionaries.
-        """
-        r = oandapyV20.endpoints.trades.TradesList(accountID=self.account_id, params={"state": "OPEN"})
+        """Fetch all open trades."""
+        r = trades.TradesList(accountID=self.account_id, params={"state": "OPEN"})
         try:
             self.api.request(r)
             return r.response.get("trades", [])
@@ -116,19 +126,14 @@ class OandaConnection:
             return []
 
     def close_trade(self, trade_id, units=None):
-        """
-        Close an open trade.
-        Args:
-            trade_id (str): The ID of the trade to close.
-            units (str, optional): Number of units to close. If None, closes all.
-        """
+        """Close an open trade."""
         data = {}
         if units:
             data["units"] = str(units)
         else:
             data["units"] = "ALL"
 
-        r = trades.TradeClose(accountID=self.account_id, tradeID=trade_id, data=data)
+        r = trades.TradeClose(accountID=self.account_id, tradeID=str(trade_id), data=data)
         try:
             self.api.request(r)
             self.logger.info(f"Trade {trade_id} closed: {r.response}")
