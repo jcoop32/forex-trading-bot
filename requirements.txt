@@ -9,3 +9,4 @@ uvicorn
 httpx
 psycopg2-binary
 redis
+tenacity

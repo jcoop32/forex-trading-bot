@@ -15,6 +15,8 @@ from risk_manager import RiskManager
 from market_scanner import MarketScanner
 from trade_ledger import TradeLedger
 from redis_client import RedisClient
+from sentiment import SentimentAnalyzer
+from utils import pip_unit as get_pip_unit
 from api import create_app
 
 def start_api_server(app_instance, host="0.0.0.0", port=8000):
@@ -83,7 +85,7 @@ def is_trading_session_active():
 def sync_closed_trades(conn, ledger, redis_client=None):
     """
     Detect if any trades marked OPEN in the ledger were closed by OANDA (hit SL or TP),
-    and record their realized PnL.
+    and record their realized PnL from OANDA's actual trade data.
     """
     try:
         open_trades_oanda = conn.get_open_trades()
@@ -97,12 +99,21 @@ def sync_closed_trades(conn, ledger, redis_client=None):
 
         for t_id, inst, entry_p in ledger_open_trades:
             if t_id not in active_trade_ids:
-                # Trade was closed on OANDA! Fetch recent trade details
-                quote = conn.get_pricing_quote(inst)
-                exit_price = quote["mid"] if quote else entry_p
-                
-                ledger.record_close(trade_id=t_id, exit_price=exit_price, realized_pl=0.0)
-                logger.info(f"Sync: Trade {t_id} on {inst} was closed by OANDA (SL/TP hit).")
+                # Trade was closed on OANDA. Fetch real P/L from trade details.
+                trade_details = conn.get_trade_details(t_id)
+
+                if trade_details:
+                    realized_pl = trade_details["realizedPL"]
+                    exit_price = trade_details["averageClosePrice"] or entry_p
+                else:
+                    # Fallback if trade details fetch fails (e.g., trade purged from history)
+                    logger.warning(f"Sync: Could not fetch details for trade {t_id}. Recording with estimated values.")
+                    quote = conn.get_pricing_quote(inst)
+                    exit_price = quote["mid"] if quote else entry_p
+                    realized_pl = 0.0
+
+                ledger.record_close(trade_id=t_id, exit_price=exit_price, realized_pl=realized_pl)
+                logger.info(f"Sync: Trade {t_id} on {inst} closed by OANDA | P/L: ${realized_pl:.2f} | Exit: {exit_price}")
 
                 if redis_client:
                     redis_client.publish_event("forex:events", {
@@ -110,7 +121,7 @@ def sync_closed_trades(conn, ledger, redis_client=None):
                         "trade_id": t_id,
                         "instrument": inst,
                         "exit_price": exit_price,
-                        "realized_pl": 0.0
+                        "realized_pl": realized_pl
                     })
     except Exception as e:
         logger.error(f"Error syncing closed trades: {e}")
@@ -154,9 +165,13 @@ def main():
     conn = OandaConnection()
     strategy = TechnicalScalpStrategy()
     risk_manager = RiskManager()
-    scanner = MarketScanner(INSTRUMENTS)
+    sentiment = SentimentAnalyzer(conn)
+    scanner = MarketScanner(INSTRUMENTS, sentiment_analyzer=sentiment)
     ledger = TradeLedger()
     redis_client = RedisClient()
+
+    # Track trades whose SL has been moved to breakeven (avoid redundant API calls)
+    breakeven_trades: set[str] = set()
 
     # Signal handlers for clean shutdown
     def handle_signal(sig, frame):
@@ -171,9 +186,10 @@ def main():
         balance, margin_avail = conn.get_account_details()
         logger.info(f"Connected to OANDA. Initial Balance: ${balance:.2f} | Free Margin: ${margin_avail:.2f}")
 
-        # Start Monitoring API in background thread
+        # Start Monitoring API in background thread with its own OANDA connection
         api_port = int(os.getenv("API_PORT", "8000"))
-        api_app = create_app(connection=conn, ledger=ledger, redis_client=redis_client)
+        api_conn = OandaConnection()  # Separate connection for thread safety
+        api_app = create_app(connection=api_conn, ledger=ledger, redis_client=redis_client)
         api_thread = threading.Thread(
             target=start_api_server,
             args=(api_app, "0.0.0.0", api_port),
@@ -233,8 +249,36 @@ def main():
                 t_id = t['id']
                 pl = float(t.get('unrealizedPL', 0.0))
                 units = int(t.get('currentUnits', 0))
+                entry_price = float(t.get('price', 0.0))
                 direction = "BUY" if units > 0 else "SELL"
                 logger.info(f" >> ACTIVE POSITION: {inst} ({direction} {units}u) | Unrealized P/L: ${pl:.2f}")
+
+                # Breakeven Stop Logic: move SL to entry + 0.5 pip buffer after +5 pips profit
+                if t_id not in breakeven_trades and entry_price > 0:
+                    pu = get_pip_unit(inst)
+                    current_quote = conn.get_pricing_quote(inst)
+                    if current_quote:
+                        current_mid = current_quote["mid"]
+                        if direction == "BUY":
+                            profit_pips = (current_mid - entry_price) / pu
+                        else:
+                            profit_pips = (entry_price - current_mid) / pu
+
+                        if profit_pips >= 5.0:
+                            # Move SL to breakeven + 0.5 pip buffer for spread
+                            be_buffer = 0.5 * pu
+                            if direction == "BUY":
+                                new_sl = entry_price + be_buffer
+                            else:
+                                new_sl = entry_price - be_buffer
+
+                            result = conn.modify_trade_sl(t_id, new_sl, inst)
+                            if result:
+                                breakeven_trades.add(t_id)
+                                logger.info(f"Breakeven: Trade {t_id} ({inst}) SL moved to {new_sl:.5f} (+{profit_pips:.1f} pips in profit)")
+
+            # Clean up breakeven tracking for trades that are no longer open
+            breakeven_trades -= (breakeven_trades - {t['id'] for t in open_trades})
 
             # 4. Strict Single Position Enforcement
             if active_count >= MAX_CONCURRENT_TRADES:
@@ -320,7 +364,10 @@ def main():
                 logger.info(f"Stop Loss:  {sl_price}")
                 logger.info("=" * 40)
             else:
-                logger.error(f"Order placement failed for {instrument}.")
+                logger.error(
+                    f"Order placement failed for {instrument} | {decision} {units:,}u | "
+                    f"Price: {current_price} | SL: {sl_price} | TP: {tp_price}"
+                )
 
         except Exception as e:
             logger.error(f"Unexpected error in main loop: {e}", exc_info=True)

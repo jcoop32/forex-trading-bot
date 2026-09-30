@@ -1,11 +1,14 @@
 import sqlite3
 import os
 import logging
+import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 try:
     import psycopg2
     from psycopg2.extras import RealDictCursor
+    from psycopg2.pool import SimpleConnectionPool
     POSTGRES_AVAILABLE = True
 except ImportError:
     POSTGRES_AVAILABLE = False
@@ -17,6 +20,8 @@ class TradeLedger:
     Trade Ledger database layer supporting both PostgreSQL and SQLite.
     Automatically uses PostgreSQL when DATABASE_URL is configured,
     falling back to SQLite for local development and testing.
+
+    Thread-safe: uses a connection pool for Postgres and a threading lock for SQLite.
     """
     def __init__(self, db_path=None, database_url=None):
         self.database_url = database_url or os.getenv("DATABASE_URL")
@@ -24,19 +29,40 @@ class TradeLedger:
         self.db_path = db_path or os.path.join(os.getenv("LOG_DIR", "."), "trades.db")
         
         self.placeholder = "%s" if self.is_postgres else "?"
+        self._lock = threading.Lock()
+        self._pool = None
         
         if self.is_postgres:
-            logger.info("TradeLedger: Configured with PostgreSQL backend.")
+            if not POSTGRES_AVAILABLE:
+                raise ImportError("psycopg2 is required for PostgreSQL but not installed.")
+            self._pool = SimpleConnectionPool(minconn=2, maxconn=10, dsn=self.database_url)
+            logger.info("TradeLedger: Configured with PostgreSQL backend (pooled, 2-10 connections).")
         else:
             logger.info(f"TradeLedger: Configured with SQLite backend ({self.db_path}).")
             os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
             
         self._init_db()
 
+    @contextmanager
     def _get_connection(self):
+        """
+        Context manager that yields a database connection.
+        - Postgres: pulls from pool, returns on exit.
+        - SQLite: uses a lock to serialize access across threads.
+        """
         if self.is_postgres:
-            return psycopg2.connect(self.database_url)
-        return sqlite3.connect(self.db_path)
+            conn = self._pool.getconn()
+            try:
+                yield conn
+            finally:
+                self._pool.putconn(conn)
+        else:
+            with self._lock:
+                conn = sqlite3.connect(self.db_path)
+                try:
+                    yield conn
+                finally:
+                    conn.close()
 
     def _init_db(self):
         """Create trades table if not exists."""

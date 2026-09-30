@@ -8,8 +8,34 @@ import oandapyV20.endpoints.orders as orders
 import oandapyV20.endpoints.trades as trades
 import oandapyV20.endpoints.accounts as accounts
 from oandapyV20.contrib.requests import MarketOrderRequest, TakeProfitDetails, StopLossDetails
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception, before_sleep_log
+from utils import pip_unit, price_precision, format_price
 
 load_dotenv()
+
+logger = logging.getLogger("trading_bot")
+
+
+def _is_retriable_error(exception):
+    """Only retry on transient network/rate-limit errors, not auth or validation failures."""
+    if isinstance(exception, oandapyV20.exceptions.V20Error):
+        code = getattr(exception, 'code', None)
+        # 429 = rate limited, 503 = service unavailable
+        return code in (429, 503)
+    if isinstance(exception, (ConnectionError, TimeoutError, OSError)):
+        return True
+    return False
+
+
+# Shared retry decorator for read-only API calls
+_api_retry = retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception(_is_retriable_error),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
+
 
 class OandaConnection:
     def __init__(self):
@@ -23,6 +49,7 @@ class OandaConnection:
         self.api = oandapyV20.API(access_token=self.access_token, environment=self.env)
         self.logger = logging.getLogger("trading_bot")
 
+    @_api_retry
     def get_candles(self, instrument, count=500, granularity="M1"):
         """Fetch historical candle data."""
         params = {
@@ -34,10 +61,13 @@ class OandaConnection:
         try:
             self.api.request(r)
             return r.response.get("candles", [])
+        except oandapyV20.exceptions.V20Error:
+            raise  # Let tenacity decide whether to retry based on error code
         except Exception as e:
             self.logger.error(f"Error fetching candles for {instrument}: {e}")
             return []
 
+    @_api_retry
     def get_account_details(self):
         """Fetch current account balance and margin available."""
         r = accounts.AccountSummary(accountID=self.account_id)
@@ -46,10 +76,13 @@ class OandaConnection:
             balance = float(r.response['account']['balance'])
             margin_avail = float(r.response['account']['marginAvailable'])
             return balance, margin_avail
+        except oandapyV20.exceptions.V20Error:
+            raise
         except Exception as e:
             self.logger.error(f"Error fetching account details: {e}")
             return 0.0, 0.0
 
+    @_api_retry
     def get_pricing_quote(self, instrument):
         """
         Fetch real-time bid, ask, mid, and spread in pips.
@@ -67,8 +100,8 @@ class OandaConnection:
             ask = float(p['asks'][0]['price'])
             mid = (bid + ask) / 2.0
             
-            pip_unit = 0.01 if "JPY" in instrument else 0.0001
-            spread_pips = (ask - bid) / pip_unit
+            pu = pip_unit(instrument)
+            spread_pips = (ask - bid) / pu
             
             return {
                 "bid": bid,
@@ -76,6 +109,8 @@ class OandaConnection:
                 "mid": mid,
                 "spread_pips": round(spread_pips, 2)
             }
+        except oandapyV20.exceptions.V20Error:
+            raise
         except Exception as e:
             self.logger.error(f"Error fetching pricing quote for {instrument}: {e}")
             return None
@@ -88,7 +123,7 @@ class OandaConnection:
         return None
 
     def create_order(self, instrument, units, stop_loss_price=None, take_profit_price=None):
-        """Place a market order with optional SL/TP."""
+        """Place a market order with optional SL/TP. Not retried (market orders are not idempotent)."""
         units = int(units)
         
         data = {
@@ -98,35 +133,67 @@ class OandaConnection:
             "positionFill": "DEFAULT"
         }
 
-        precision = 3 if "JPY" in instrument else 5
-
         if stop_loss_price:
-            data["stopLossOnFill"] = {"price": f"{stop_loss_price:.{precision}f}"}
+            data["stopLossOnFill"] = {"price": format_price(stop_loss_price, instrument)}
         
         if take_profit_price:
-            data["takeProfitOnFill"] = {"price": f"{take_profit_price:.{precision}f}"}
+            data["takeProfitOnFill"] = {"price": format_price(take_profit_price, instrument)}
 
         r = orders.OrderCreate(accountID=self.account_id, data={"order": data})
         try:
             self.api.request(r)
             self.logger.info(f"Order created for {instrument} ({units}u): {r.response}")
             return r.response
+        except oandapyV20.exceptions.V20Error as e:
+            self.logger.error(
+                f"OANDA rejected order for {instrument} ({units}u, SL={stop_loss_price}, TP={take_profit_price}): "
+                f"Code={e.code} | {e.msg}"
+            )
+            return None
         except Exception as e:
-            self.logger.error(f"Error creating order for {instrument}: {e}")
+            self.logger.error(f"Error creating order for {instrument} ({units}u): {e}")
             return None
 
+    @_api_retry
     def get_open_trades(self):
         """Fetch all open trades."""
         r = trades.TradesList(accountID=self.account_id, params={"state": "OPEN"})
         try:
             self.api.request(r)
             return r.response.get("trades", [])
+        except oandapyV20.exceptions.V20Error:
+            raise
         except Exception as e:
             self.logger.error(f"Error fetching open trades: {e}")
             return []
 
+    @_api_retry
+    def get_trade_details(self, trade_id):
+        """
+        Fetch full details for a trade (open or closed).
+        Returns dict with 'realizedPL', 'averageClosePrice', 'state', etc., or None on failure.
+        """
+        r = trades.TradeDetails(accountID=self.account_id, tradeID=str(trade_id))
+        try:
+            self.api.request(r)
+            trade = r.response.get("trade", {})
+            return {
+                "trade_id": trade.get("id"),
+                "instrument": trade.get("instrument"),
+                "state": trade.get("state"),
+                "realizedPL": float(trade.get("realizedPL", 0.0)),
+                "averageClosePrice": float(trade.get("averageClosePrice", 0.0)) if trade.get("averageClosePrice") else None,
+                "currentUnits": int(trade.get("currentUnits", 0)),
+                "unrealizedPL": float(trade.get("unrealizedPL", 0.0)),
+            }
+        except oandapyV20.exceptions.V20Error:
+            raise
+        except Exception as e:
+            self.logger.error(f"Error fetching trade details for {trade_id}: {e}")
+            return None
+
     def close_trade(self, trade_id, units=None):
-        """Close an open trade."""
+        """Close an open trade. Not retried (closing is not idempotent)."""
         data = {}
         if units:
             data["units"] = str(units)
@@ -140,4 +207,23 @@ class OandaConnection:
             return r.response
         except Exception as e:
             self.logger.error(f"Error closing trade {trade_id}: {e}")
+            return None
+
+    def modify_trade_sl(self, trade_id, new_sl_price, instrument):
+        """
+        Modify an open trade's stop loss price via OANDA Trade CRCDO (Client Rate Change Dependent Orders).
+        Returns the response dict on success, None on failure.
+        """
+        data = {
+            "stopLoss": {
+                "price": format_price(new_sl_price, instrument)
+            }
+        }
+        r = trades.TradeCRCDO(accountID=self.account_id, tradeID=str(trade_id), data=data)
+        try:
+            self.api.request(r)
+            self.logger.info(f"Trade {trade_id} SL modified to {format_price(new_sl_price, instrument)}")
+            return r.response
+        except Exception as e:
+            self.logger.error(f"Error modifying SL for trade {trade_id}: {e}")
             return None

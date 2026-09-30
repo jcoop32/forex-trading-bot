@@ -34,10 +34,46 @@ def create_app(connection=None, ledger=None, redis_client=None):
     def root():
         return {
             "app": "Forex Scalper Monitoring API",
-            "version": "0.3.0",
+            "version": "0.4.0",
             "status": "ONLINE",
             "database": "PostgreSQL" if trade_ledger.is_postgres else "SQLite",
             "redis_connected": r_client.is_connected(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+    @app.get("/health")
+    def health_check():
+        """
+        Health check endpoint for K8s readiness probes.
+        Returns 200 if both OANDA API and database are reachable, 503 otherwise.
+        """
+        issues = []
+
+        # Check OANDA connectivity
+        try:
+            balance, margin = conn.get_account_details()
+            if balance == 0.0 and margin == 0.0:
+                issues.append("OANDA returned zero balance/margin (possible auth failure)")
+        except Exception as e:
+            issues.append(f"OANDA unreachable: {str(e)[:100]}")
+
+        # Check database connectivity
+        try:
+            with trade_ledger._get_connection() as db_conn:
+                cursor = db_conn.cursor()
+                cursor.execute("SELECT 1")
+        except Exception as e:
+            issues.append(f"Database unreachable: {str(e)[:100]}")
+
+        if issues:
+            raise HTTPException(status_code=503, detail={
+                "status": "degraded",
+                "issues": issues,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+
+        return {
+            "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 

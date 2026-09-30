@@ -1,4 +1,5 @@
 import logging
+from utils import price_precision
 
 class RiskManager:
     """
@@ -58,7 +59,7 @@ class RiskManager:
         """
         Calculate absolute Stop Loss and Take Profit price levels.
         """
-        precision = 3 if "JPY" in instrument else 5
+        precision = price_precision(instrument)
         
         if decision == "BUY":
             sl_price = current_price - sl_dist
