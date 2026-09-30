@@ -1,12 +1,13 @@
 import logging
+import time
 import concurrent.futures
 from utils import pip_unit as get_pip_unit
 
 class MarketScanner:
     """
-    Concurrent market scanner equipped with dynamic Spread Gating and optional
-    Sentiment Analysis. Scans major currency pairs and surfaces high-confidence
-    technical setups.
+    Concurrent market scanner equipped with dynamic Spread Gating and
+    time-based candle caching. Scans major currency pairs and surfaces
+    high-confidence technical setups.
     """
     def __init__(self, instruments=None):
         self.logger = logging.getLogger("trading_bot")
@@ -19,6 +20,41 @@ class MarketScanner:
         # Fallback static limits used when ATR is unavailable
         self.MAX_SPREAD_MAJORS = 1.2    # EUR_USD, GBP_USD
         self.MAX_SPREAD_CROSSES = 1.8   # USD_JPY, USD_CAD, AUD_USD
+
+        # Candle cache: {(instrument, granularity): (timestamp, data)}
+        # M1 is never cached (always fresh), M5 cached 5min, M15 cached 15min
+        self._candle_cache = {}
+        self._cache_ttl = {"M1": 0, "M5": 300, "M15": 900}
+
+    def _get_candles(self, connection, instrument, granularity, count=40):
+        """
+        Fetch candles with time-based caching for higher timeframes.
+        M5 candles are cached for 5 minutes, M15 for 15 minutes.
+        M1 is always fetched fresh.
+        """
+        ttl = self._cache_ttl.get(granularity, 0)
+        cache_key = (instrument, granularity)
+
+        if ttl > 0:
+            cached = self._candle_cache.get(cache_key)
+            if cached:
+                cached_at, data = cached
+                age = time.time() - cached_at
+                if age < ttl:
+                    return data
+
+        # Fetch fresh data from OANDA
+        data = connection.get_candles(instrument, count=count, granularity=granularity)
+
+        if data and ttl > 0:
+            self._candle_cache[cache_key] = (time.time(), data)
+
+        return data
+
+    def shutdown(self):
+        """Clean up the thread pool executor."""
+        self._executor.shutdown(wait=False)
+        self.logger.info("MarketScanner: Thread pool executor shut down.")
 
     def _get_max_allowed_spread(self, instrument, atr_pips=None):
         """
@@ -67,10 +103,10 @@ class MarketScanner:
                     self.logger.info(f"[{instrument}] Spread {spread:.1f}p exceeds absolute ceiling {self.SPREAD_CEILING:.1f}. Skipping.")
                     return None
 
-                # 2. Fetch Multi-Timeframe Candles
-                c_m1 = connection.get_candles(instrument, count=40, granularity="M1")
-                c_m5 = connection.get_candles(instrument, count=40, granularity="M5")
-                c_m15 = connection.get_candles(instrument, count=40, granularity="M15")
+                # 2. Fetch Multi-Timeframe Candles (M5/M15 cached)
+                c_m1 = self._get_candles(connection, instrument, "M1")
+                c_m5 = self._get_candles(connection, instrument, "M5")
+                c_m15 = self._get_candles(connection, instrument, "M15")
 
                 if not c_m1 or not c_m5:
                     return None

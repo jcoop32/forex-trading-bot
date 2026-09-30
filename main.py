@@ -28,7 +28,7 @@ load_dotenv()
 # Configuration (all env-configurable for K8s/Portainer without rebuilds)
 _instruments_raw = os.getenv("INSTRUMENTS", "EUR_USD,GBP_USD,USD_JPY,USD_CAD,AUD_USD")
 INSTRUMENTS = [i.strip() for i in _instruments_raw.split(",") if i.strip()]
-CYCLE_SLEEP_SECONDS = int(os.getenv("CYCLE_SLEEP_SECONDS", "30"))
+CYCLE_SLEEP_SECONDS = int(os.getenv("CYCLE_SLEEP_SECONDS", "60"))
 MAX_CONCURRENT_TRADES = int(os.getenv("MAX_CONCURRENT_TRADES", "1"))
 
 # Daily Circuit Breakers for $1,000 Paper Account
@@ -41,20 +41,11 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="oandapyV20")
 logging.getLogger("oandapyV20").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-# Logging Setup
-LOG_DIR = os.getenv("LOG_DIR", ".")
-os.makedirs(LOG_DIR, exist_ok=True)
-log_file_path = os.path.join(LOG_DIR, "trading_bot.log")
-
-handlers = [
-    logging.FileHandler(log_file_path),
-    logging.StreamHandler(sys.stdout)
-]
-
+# Logging: stdout only (K8s captures via kubectl logs, trade history lives in Postgres)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=handlers
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger("trading_bot")
 
@@ -126,8 +117,8 @@ def sync_closed_trades(conn, ledger, redis_client=None):
     except Exception as e:
         logger.error(f"Error syncing closed trades: {e}")
 
-def shutdown_bot(conn, ledger=None, redis_client=None):
-    """Graceful shutdown handler."""
+def shutdown_bot(conn, ledger=None, redis_client=None, scanner=None):
+    """Graceful shutdown handler. Cleans up all resources."""
     logger.info("Initiating graceful shutdown...")
     try:
         open_trades = conn.get_open_trades()
@@ -150,9 +141,25 @@ def shutdown_bot(conn, ledger=None, redis_client=None):
                         "instrument": inst,
                         "realized_pl": pl
                     })
-        logger.info("Shutdown complete.")
     except Exception as e:
-        logger.error(f"Error during shutdown: {e}")
+        logger.error(f"Error closing trades during shutdown: {e}")
+
+    # Clean up resources
+    if scanner:
+        scanner.shutdown()
+    if ledger and hasattr(ledger, '_pool') and ledger._pool:
+        try:
+            ledger._pool.closeall()
+            logger.info("TradeLedger: Connection pool closed.")
+        except Exception:
+            pass
+    if ledger and hasattr(ledger, '_sqlite_conn'):
+        try:
+            ledger._sqlite_conn.close()
+            logger.info("TradeLedger: SQLite connection closed.")
+        except Exception:
+            pass
+    logger.info("Shutdown complete.")
 
 def main():
     logger.info("====================================================")
@@ -175,7 +182,7 @@ def main():
     # Signal handlers for clean shutdown
     def handle_signal(sig, frame):
         logger.info(f"Received exit signal ({sig}).")
-        shutdown_bot(conn, ledger, redis_client)
+        shutdown_bot(conn, ledger, redis_client, scanner)
         sys.exit(0)
 
     signal.signal(signal.SIGINT, handle_signal)
@@ -255,7 +262,8 @@ def main():
                 # Trailing Stop Logic:
                 # - Move SL to breakeven + 0.5 pip buffer at +5 pips profit
                 # - Continue trailing in +3 pip increments (+8, +11, +14, ...)
-                if entry_price > 0:
+                # Pre-check: skip the quote API call if unrealized P/L is clearly below threshold
+                if entry_price > 0 and pl > 0:
                     pu = get_pip_unit(inst)
                     current_quote = conn.get_pricing_quote(inst)
                     if current_quote:

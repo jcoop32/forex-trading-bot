@@ -16,6 +16,15 @@ spec:
       labels:
         app: forex-trading-bot
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - node-3
       containers:
         - name: bot
           image: jcooper23/forex-trading-bot:latest
@@ -24,8 +33,6 @@ spec:
             - name: http
               containerPort: 8000
           env:
-            - name: LOG_DIR
-              value: "/app/data"
             - name: API_PORT
               value: "8000"
             - name: REDIS_URL
