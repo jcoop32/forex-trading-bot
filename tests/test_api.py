@@ -49,6 +49,12 @@ class TestAPI(unittest.TestCase):
         data = resp.json()
         self.assertEqual(data["status"], "ONLINE")
 
+    def test_health_endpoint(self):
+        resp = self.client.get("/health")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["status"], "healthy")
+
     def test_get_status_endpoint(self):
         resp = self.client.get("/api/status")
         self.assertEqual(resp.status_code, 200)

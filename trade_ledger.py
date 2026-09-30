@@ -40,6 +40,8 @@ class TradeLedger:
         else:
             logger.info(f"TradeLedger: Configured with SQLite backend ({self.db_path}).")
             os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
+            # Persistent connection with thread-safety handled by self._lock
+            self._sqlite_conn = sqlite3.connect(self.db_path, check_same_thread=False)
             
         self._init_db()
 
@@ -48,7 +50,7 @@ class TradeLedger:
         """
         Context manager that yields a database connection.
         - Postgres: pulls from pool, returns on exit.
-        - SQLite: uses a lock to serialize access across threads.
+        - SQLite: uses a lock to serialize access with a persistent connection.
         """
         if self.is_postgres:
             conn = self._pool.getconn()
@@ -58,11 +60,7 @@ class TradeLedger:
                 self._pool.putconn(conn)
         else:
             with self._lock:
-                conn = sqlite3.connect(self.db_path)
-                try:
-                    yield conn
-                finally:
-                    conn.close()
+                yield self._sqlite_conn
 
     def _init_db(self):
         """Create trades table if not exists."""
@@ -147,6 +145,9 @@ class TradeLedger:
             target_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
         p = self.placeholder
+        # Use proper date range comparison instead of fragile LIKE pattern
+        start_of_day = f"{target_date}T00:00:00"
+        end_of_day = f"{target_date}T23:59:59"
         sql = f"""
             SELECT 
                 COUNT(*),
@@ -154,12 +155,12 @@ class TradeLedger:
                 SUM(CASE WHEN realized_pl > 0 THEN 1 ELSE 0 END),
                 SUM(CASE WHEN realized_pl < 0 THEN 1 ELSE 0 END)
             FROM trades
-            WHERE status = 'CLOSED' AND closed_at LIKE {p}
+            WHERE status = 'CLOSED' AND closed_at >= {p} AND closed_at <= {p}
         """
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute(sql, (f"{target_date}%",))
+                cursor.execute(sql, (start_of_day, end_of_day))
                 row = cursor.fetchone()
                 return {
                     "date": target_date,

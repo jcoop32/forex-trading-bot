@@ -15,7 +15,6 @@ from risk_manager import RiskManager
 from market_scanner import MarketScanner
 from trade_ledger import TradeLedger
 from redis_client import RedisClient
-from sentiment import SentimentAnalyzer
 from utils import pip_unit as get_pip_unit
 from api import create_app
 
@@ -26,10 +25,11 @@ def start_api_server(app_instance, host="0.0.0.0", port=8000):
 
 load_dotenv()
 
-# Configuration
-INSTRUMENTS = ["EUR_USD", "GBP_USD", "USD_JPY", "USD_CAD", "AUD_USD"]
-CYCLE_SLEEP_SECONDS = 30
-MAX_CONCURRENT_TRADES = 1
+# Configuration (all env-configurable for K8s/Portainer without rebuilds)
+_instruments_raw = os.getenv("INSTRUMENTS", "EUR_USD,GBP_USD,USD_JPY,USD_CAD,AUD_USD")
+INSTRUMENTS = [i.strip() for i in _instruments_raw.split(",") if i.strip()]
+CYCLE_SLEEP_SECONDS = int(os.getenv("CYCLE_SLEEP_SECONDS", "30"))
+MAX_CONCURRENT_TRADES = int(os.getenv("MAX_CONCURRENT_TRADES", "1"))
 
 # Daily Circuit Breakers for $1,000 Paper Account
 DAILY_PROFIT_TARGET = float(os.getenv("DAILY_PROFIT_TARGET", "25.0"))  # Lock profit at +$25.00
@@ -165,13 +165,12 @@ def main():
     conn = OandaConnection()
     strategy = TechnicalScalpStrategy()
     risk_manager = RiskManager()
-    sentiment = SentimentAnalyzer(conn)
-    scanner = MarketScanner(INSTRUMENTS, sentiment_analyzer=sentiment)
+    scanner = MarketScanner(INSTRUMENTS)
     ledger = TradeLedger()
     redis_client = RedisClient()
 
-    # Track trades whose SL has been moved to breakeven (avoid redundant API calls)
-    breakeven_trades: set[str] = set()
+    # Track trailing stop state per trade (trade_id -> last SL price set)
+    trailing_stops: dict[str, float] = {}
 
     # Signal handlers for clean shutdown
     def handle_signal(sig, frame):
@@ -253,8 +252,10 @@ def main():
                 direction = "BUY" if units > 0 else "SELL"
                 logger.info(f" >> ACTIVE POSITION: {inst} ({direction} {units}u) | Unrealized P/L: ${pl:.2f}")
 
-                # Breakeven Stop Logic: move SL to entry + 0.5 pip buffer after +5 pips profit
-                if t_id not in breakeven_trades and entry_price > 0:
+                # Trailing Stop Logic:
+                # - Move SL to breakeven + 0.5 pip buffer at +5 pips profit
+                # - Continue trailing in +3 pip increments (+8, +11, +14, ...)
+                if entry_price > 0:
                     pu = get_pip_unit(inst)
                     current_quote = conn.get_pricing_quote(inst)
                     if current_quote:
@@ -265,20 +266,34 @@ def main():
                             profit_pips = (entry_price - current_mid) / pu
 
                         if profit_pips >= 5.0:
-                            # Move SL to breakeven + 0.5 pip buffer for spread
+                            # Calculate trailing SL: breakeven + 0.5pip, then lock every 3 pips
                             be_buffer = 0.5 * pu
+                            locked_pips = 5.0 + (int((profit_pips - 5.0) / 3.0) * 3.0)
+                            trail_distance = locked_pips * pu
+
                             if direction == "BUY":
-                                new_sl = entry_price + be_buffer
+                                new_sl = entry_price + be_buffer + (trail_distance - 5.0 * pu)
                             else:
-                                new_sl = entry_price - be_buffer
+                                new_sl = entry_price - be_buffer - (trail_distance - 5.0 * pu)
 
-                            result = conn.modify_trade_sl(t_id, new_sl, inst)
-                            if result:
-                                breakeven_trades.add(t_id)
-                                logger.info(f"Breakeven: Trade {t_id} ({inst}) SL moved to {new_sl:.5f} (+{profit_pips:.1f} pips in profit)")
+                            # Only send API call if the new SL is better than the last one we set
+                            last_sl = trailing_stops.get(t_id)
+                            sl_improved = (
+                                last_sl is None
+                                or (direction == "BUY" and new_sl > last_sl)
+                                or (direction == "SELL" and new_sl < last_sl)
+                            )
+                            if sl_improved:
+                                result = conn.modify_trade_sl(t_id, new_sl, inst)
+                                if result:
+                                    trailing_stops[t_id] = new_sl
+                                    logger.info(f"Trailing SL: Trade {t_id} ({inst}) SL -> {new_sl:.5f} | Locked: {locked_pips:.0f}p of {profit_pips:.1f}p profit")
 
-            # Clean up breakeven tracking for trades that are no longer open
-            breakeven_trades -= (breakeven_trades - {t['id'] for t in open_trades})
+            # Clean up tracking for trades that are no longer open
+            open_ids = {t['id'] for t in open_trades}
+            for closed_id in list(trailing_stops.keys()):
+                if closed_id not in open_ids:
+                    del trailing_stops[closed_id]
 
             # 4. Strict Single Position Enforcement
             if active_count >= MAX_CONCURRENT_TRADES:

@@ -1,3 +1,8 @@
+# ============================================================================
+# LOCAL DEVELOPMENT ONLY — NOT FOR PRODUCTION
+# Production deployment uses Kubernetes manifests in k8s/ via Portainer.
+# Use this file for local testing: docker compose up --build
+# ============================================================================
 services:
   trading-bot:
     build: .

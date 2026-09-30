@@ -1,6 +1,5 @@
 import os
 import logging
-from dotenv import load_dotenv
 import oandapyV20
 import oandapyV20.endpoints.instruments as instruments
 import oandapyV20.endpoints.pricing as pricing
@@ -10,8 +9,6 @@ import oandapyV20.endpoints.accounts as accounts
 from oandapyV20.contrib.requests import MarketOrderRequest, TakeProfitDetails, StopLossDetails
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception, before_sleep_log
 from utils import pip_unit, price_precision, format_price
-
-load_dotenv()
 
 logger = logging.getLogger("trading_bot")
 

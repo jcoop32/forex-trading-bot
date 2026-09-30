@@ -12,7 +12,7 @@ from redis_client import RedisClient
 def create_app(connection=None, ledger=None, redis_client=None):
     app = FastAPI(
         title="Forex Scalper Monitoring API",
-        version="0.3.0",
+        version="0.4.0",
         description="Fast JSON API for AI agents and dashboards with PostgreSQL storage and Redis Pub/Sub event streaming."
     )
 
@@ -208,8 +208,12 @@ def create_app(connection=None, ledger=None, redis_client=None):
             pubsub.subscribe("forex:events", "forex:alerts")
             yield f"data: {{\"event\": \"CONNECTED\", \"message\": \"Subscribed to forex:events and forex:alerts\"}}\n\n"
 
+            loop = asyncio.get_event_loop()
             while True:
-                message = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                # Offload blocking Redis call to a thread to avoid freezing the event loop
+                message = await loop.run_in_executor(
+                    None, lambda: pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                )
                 if message and message.get("type") == "message":
                     channel = message["channel"]
                     data = message["data"]
@@ -220,5 +224,7 @@ def create_app(connection=None, ledger=None, redis_client=None):
 
     return app
 
-# Default app instance for uvicorn
-app = create_app()
+# Default app instance only when run standalone (e.g., `uvicorn api:app`)
+# main.py creates its own via create_app() with explicit dependencies
+if __name__ == "__main__":
+    app = create_app()

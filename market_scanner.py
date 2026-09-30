@@ -8,10 +8,10 @@ class MarketScanner:
     Sentiment Analysis. Scans major currency pairs and surfaces high-confidence
     technical setups.
     """
-    def __init__(self, instruments=None, sentiment_analyzer=None):
+    def __init__(self, instruments=None):
         self.logger = logging.getLogger("trading_bot")
         self.instruments = instruments or ["EUR_USD", "GBP_USD", "USD_JPY", "USD_CAD", "AUD_USD"]
-        self.sentiment = sentiment_analyzer
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=len(self.instruments))
 
         # Absolute spread boundaries (pips) - dynamic gate adjusts within these
         self.SPREAD_FLOOR = 0.8   # Never reject a spread tighter than this
@@ -90,22 +90,6 @@ class MarketScanner:
                     self.logger.info(f"[{instrument}] Spread {spread:.1f}p exceeds dynamic limit {max_spread:.1f}p (ATR: {atr_pips:.1f}p). Skipping.")
                     return None
 
-                # 5. Sentiment Modifier (if analyzer is available)
-                if self.sentiment:
-                    try:
-                        sentiment_verdict = self.sentiment.get_market_sentiment(instrument)
-                        # Contrarian: sentiment returns the opposite of crowd positioning
-                        if sentiment_verdict == decision:
-                            # Sentiment agrees with our signal (crowd is opposite) - boost
-                            conf += 0.10
-                            self.logger.info(f"[{instrument}] Sentiment confirms {decision} (contrarian alignment). Conf boosted to {conf:.2f}")
-                        elif sentiment_verdict != "NEUTRAL" and sentiment_verdict != decision:
-                            # Sentiment disagrees (crowd agrees with our direction) - caution
-                            conf -= 0.05
-                            self.logger.info(f"[{instrument}] Sentiment warns against {decision}. Conf reduced to {conf:.2f}")
-                    except Exception as e:
-                        self.logger.warning(f"[{instrument}] Sentiment check failed: {e}")
-
                 return {
                     "instrument": instrument,
                     "decision": decision,
@@ -121,18 +105,17 @@ class MarketScanner:
                 self.logger.error(f"Error scanning {instrument}: {e}")
                 return None
 
-        # Concurrently analyze pairs
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.instruments)) as executor:
-            futures = {executor.submit(analyze_pair, inst): inst for inst in self.instruments}
-            for future in concurrent.futures.as_completed(futures):
-                inst = futures[future]
-                try:
-                    res = future.result()
-                    if res:
-                        candidates.append(res)
-                        self.logger.info(f"Candidate: {res['instrument']} {res['decision']} (Conf: {res['confidence']:.2f}, Spread: {res['spread_pips']:.1f}p)")
-                except Exception as e:
-                    self.logger.error(f"Scanner exception for {inst}: {e}")
+        # Concurrently analyze pairs using the persistent thread pool
+        futures = {self._executor.submit(analyze_pair, inst): inst for inst in self.instruments}
+        for future in concurrent.futures.as_completed(futures):
+            inst = futures[future]
+            try:
+                res = future.result()
+                if res:
+                    candidates.append(res)
+                    self.logger.info(f"Candidate: {res['instrument']} {res['decision']} (Conf: {res['confidence']:.2f}, Spread: {res['spread_pips']:.1f}p)")
+            except Exception as e:
+                self.logger.error(f"Scanner exception for {inst}: {e}")
 
         # Sort by confidence descending
         candidates.sort(key=lambda x: x["confidence"], reverse=True)

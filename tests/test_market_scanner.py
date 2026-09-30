@@ -61,26 +61,6 @@ class TestMarketScanner(unittest.TestCase):
         candidates = self.scanner.scan(self.mock_conn, self.mock_strategy)
         self.assertEqual(len(candidates), 0)
 
-    def test_sentiment_boosts_confidence(self):
-        """When sentiment agrees with the technical signal, confidence should increase."""
-        mock_sentiment = MagicMock()
-        # Sentiment returns BUY (contrarian: crowd is short -> bullish signal)
-        mock_sentiment.get_market_sentiment.return_value = "BUY"
-        scanner = MarketScanner(["EUR_USD"], sentiment_analyzer=mock_sentiment)
-
-        self.mock_conn.get_pricing_quote.return_value = {
-            "bid": 1.10000,
-            "ask": 1.10008,
-            "mid": 1.10004,
-            "spread_pips": 0.8
-        }
-        self.mock_conn.get_candles.return_value = [{"dummy": "candle"}] * 40
-        self.mock_strategy.evaluate.return_value = ("BUY", 0.70, 0.00060, 0.00060, 0.00090)
-
-        candidates = scanner.scan(self.mock_conn, self.mock_strategy)
-        self.assertGreaterEqual(len(candidates), 1)
-        # Should be 0.70 + 0.10 sentiment boost = 0.80
-        self.assertAlmostEqual(candidates[0]["confidence"], 0.80, places=2)
-
 if __name__ == '__main__':
     unittest.main()
+

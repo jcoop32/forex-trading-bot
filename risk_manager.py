@@ -49,8 +49,10 @@ class RiskManager:
             # $700 - $1,500: trade standard 10,000 units
             units = self.BASE_UNITS
         else:
-            # Above $1,500, scale incrementally in 5,000 unit blocks
-            units = int(scale_factor * self.BASE_UNITS / 5000) * 5000
+            # Above $1,500, scale in 2,500-unit steps per $500 increment
+            # $1,500 -> 12,500 | $2,000 -> 15,000 | $2,500 -> 17,500
+            extra_blocks = int((effective_balance - 1000.0) / 500.0)
+            units = self.BASE_UNITS + (extra_blocks * 2500)
 
         self.logger.info(f"Position Sizing: Balance ${effective_balance:.2f} | Free Margin: ${margin_available:.2f} -> {units:,} Units ({pair})")
         return units
