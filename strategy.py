@@ -249,11 +249,45 @@ class TechnicalScalpStrategy:
 
         tp_pips = sl_pips * rr_multiplier
 
-        if buy_score >= CONFIDENCE_THRESHOLD:
-            self.logger.info(f"[{instrument}] Strong BUY Signal (Conf: {buy_score:.2f}, R:R 1:{rr_multiplier}) | RSI: {current_rsi:.1f} | Trend: BULL")
-            return "BUY", buy_score, current_atr, sl_pips, tp_pips
-        elif sell_score >= CONFIDENCE_THRESHOLD:
+        # 6. Lower-Timeframe (M1) Momentum Veto
+        # Prevent shorting into an active upward surge, or buying into an active downward dump.
+        curr_bar = df_m1.iloc[-1]
+        prev_bar = df_m1.iloc[-2]
+        curr_body = curr_bar['close'] - curr_bar['open']
+        curr_range = max(curr_bar['high'] - curr_bar['low'], 1e-6)
+
+        m1_ema9 = df_m1['close'].ewm(span=9, adjust=False).mean()
+        m1_ema_slope = (m1_ema9.iloc[-1] - m1_ema9.iloc[-3]) / pip_unit if len(m1_ema9) >= 3 else 0.0
+
+        if sell_score >= CONFIDENCE_THRESHOLD:
+            # Veto SELL if strong green bar closing at highs or sharp upward EMA slope
+            strong_bull_bar = (curr_body > 0) and (curr_bar['close'] >= curr_bar['high'] - 0.25 * curr_range) and (curr_range > 0.4 * current_atr)
+            surging_up = m1_ema_slope > 1.2
+            no_bearish_reversal = (curr_bar['close'] > prev_bar['close']) and not is_bear_pattern
+
+            if strong_bull_bar or surging_up or no_bearish_reversal:
+                self.logger.info(
+                    f"[{instrument}] M1 Momentum VETO on SELL (Slope: {m1_ema_slope:+.1f}p, Bull bar: {strong_bull_bar}, No rev: {no_bearish_reversal}). Forcing HOLD."
+                )
+                return "HOLD", sell_score, current_atr, sl_pips, tp_pips
+
             self.logger.info(f"[{instrument}] Strong SELL Signal (Conf: {sell_score:.2f}, R:R 1:{rr_multiplier}) | RSI: {current_rsi:.1f} | Trend: BEAR")
             return "SELL", sell_score, current_atr, sl_pips, tp_pips
+
+        elif buy_score >= CONFIDENCE_THRESHOLD:
+            # Veto BUY if strong red bar closing at lows or sharp downward EMA slope
+            strong_bear_bar = (curr_body < 0) and (curr_bar['close'] <= curr_bar['low'] + 0.25 * curr_range) and (curr_range > 0.4 * current_atr)
+            surging_down = m1_ema_slope < -1.2
+            no_bullish_reversal = (curr_bar['close'] < prev_bar['close']) and not is_bull_pattern
+
+            if strong_bear_bar or surging_down or no_bullish_reversal:
+                self.logger.info(
+                    f"[{instrument}] M1 Momentum VETO on BUY (Slope: {m1_ema_slope:+.1f}p, Bear bar: {strong_bear_bar}, No rev: {no_bullish_reversal}). Forcing HOLD."
+                )
+                return "HOLD", buy_score, current_atr, sl_pips, tp_pips
+
+            self.logger.info(f"[{instrument}] Strong BUY Signal (Conf: {buy_score:.2f}, R:R 1:{rr_multiplier}) | RSI: {current_rsi:.1f} | Trend: BULL")
+            return "BUY", buy_score, current_atr, sl_pips, tp_pips
         else:
             return "HOLD", top_score, current_atr, sl_pips, tp_pips
+

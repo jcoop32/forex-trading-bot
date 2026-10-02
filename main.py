@@ -73,10 +73,11 @@ def is_trading_session_active():
     # Outside peak, still allow if spread gate passes, but inform
     return True, "Off-peak Session (Strict spread gating enforced)"
 
-def sync_closed_trades(conn, ledger, redis_client=None):
+def sync_closed_trades(conn, ledger, redis_client=None, risk_manager=None):
     """
-    Detect if any trades marked OPEN in the ledger were closed by OANDA (hit SL or TP),
-    and record their realized PnL from OANDA's actual trade data.
+    Check if any trades marked as OPEN in our local ledger have been closed by OANDA
+    (e.g., hit Stop Loss or Take Profit). If so, update their status, real P/L, and exit price.
+    Also notifies risk_manager so post-loss cooldowns and circuit breakers update.
     """
     try:
         open_trades_oanda = conn.get_open_trades()
@@ -85,10 +86,10 @@ def sync_closed_trades(conn, ledger, redis_client=None):
         # Query our ledger for open trades
         with ledger._get_connection() as db_conn:
             cursor = db_conn.cursor()
-            cursor.execute("SELECT trade_id, instrument, entry_price FROM trades WHERE status = 'OPEN'")
+            cursor.execute("SELECT trade_id, instrument, direction, entry_price FROM trades WHERE status = 'OPEN'")
             ledger_open_trades = cursor.fetchall()
 
-        for t_id, inst, entry_p in ledger_open_trades:
+        for t_id, inst, direction, entry_p in ledger_open_trades:
             if t_id not in active_trade_ids:
                 # Trade was closed on OANDA. Fetch real P/L from trade details.
                 trade_details = conn.get_trade_details(t_id)
@@ -104,13 +105,17 @@ def sync_closed_trades(conn, ledger, redis_client=None):
                     realized_pl = 0.0
 
                 ledger.record_close(trade_id=t_id, exit_price=exit_price, realized_pl=realized_pl)
-                logger.info(f"Sync: Trade {t_id} on {inst} closed by OANDA | P/L: ${realized_pl:.2f} | Exit: {exit_price}")
+                logger.info(f"Sync: Trade {t_id} on {inst} ({direction}) closed by OANDA | P/L: ${realized_pl:.2f} | Exit: {exit_price}")
+
+                if risk_manager:
+                    risk_manager.record_trade_result(inst, direction, realized_pl)
 
                 if redis_client:
                     redis_client.publish_event("forex:events", {
                         "event": "TRADE_CLOSED",
                         "trade_id": t_id,
                         "instrument": inst,
+                        "direction": direction,
                         "exit_price": exit_price,
                         "realized_pl": realized_pl
                     })
@@ -246,7 +251,7 @@ def main():
             # 3. Check Open Trades & Sync
             open_trades = conn.get_open_trades()
             active_count = len(open_trades)
-            sync_closed_trades(conn, ledger, redis_client)
+            sync_closed_trades(conn, ledger, redis_client, risk_manager=risk_manager)
 
             active_instruments = {t['instrument'] for t in open_trades}
 
@@ -259,12 +264,16 @@ def main():
                 direction = "BUY" if units > 0 else "SELL"
                 logger.info(f" >> ACTIVE POSITION: {inst} ({direction} {units}u) | Unrealized P/L: ${pl:.2f}")
 
-                # Trailing Stop Logic:
-                # - Move SL to breakeven + 0.5 pip buffer at +5 pips profit
-                # - Continue trailing in +3 pip increments (+8, +11, +14, ...)
-                # Pre-check: skip the quote API call if unrealized P/L is clearly below threshold
+                # Trailing & Breakeven Stop Logic:
+                # - When profit reaches 50% of Take-Profit distance, move SL to breakeven + 0.5 pip buffer (Risk-Free).
+                # - When profit reaches +5.0 pips, continue trailing every 3 pips (+5, +8, +11, ...)
                 if entry_price > 0 and pl > 0:
                     pu = get_pip_unit(inst)
+                    tp_order = t.get('takeProfitOrder', {})
+                    tp_price = float(tp_order.get('price', 0.0)) if tp_order else 0.0
+                    tp_pips = abs(tp_price - entry_price) / pu if tp_price > 0 else 7.0
+                    be_threshold_pips = max(3.5, tp_pips * 0.50)
+
                     current_quote = conn.get_pricing_quote(inst)
                     if current_quote:
                         current_mid = current_quote["mid"]
@@ -273,18 +282,27 @@ def main():
                         else:
                             profit_pips = (entry_price - current_mid) / pu
 
+                        be_buffer = 0.5 * pu
+                        be_sl = (entry_price + be_buffer) if direction == "BUY" else (entry_price - be_buffer)
+
+                        new_sl = None
+                        status_label = ""
+                        locked_pips = 0.0
+
                         if profit_pips >= 5.0:
-                            # Calculate trailing SL: breakeven + 0.5pip, then lock every 3 pips
-                            be_buffer = 0.5 * pu
                             locked_pips = 5.0 + (int((profit_pips - 5.0) / 3.0) * 3.0)
                             trail_distance = locked_pips * pu
-
                             if direction == "BUY":
                                 new_sl = entry_price + be_buffer + (trail_distance - 5.0 * pu)
                             else:
                                 new_sl = entry_price - be_buffer - (trail_distance - 5.0 * pu)
+                            status_label = f"Trailing SL: Locked {locked_pips:.0f}p of {profit_pips:.1f}p profit"
+                        elif profit_pips >= be_threshold_pips:
+                            new_sl = be_sl
+                            locked_pips = 0.5
+                            status_label = f"Breakeven SL: 50% TP reached ({profit_pips:.1f}p / {tp_pips:.1f}p) -> SL to BE+0.5p (Risk-Free)"
 
-                            # Only send API call if the new SL is better than the last one we set
+                        if new_sl is not None:
                             last_sl = trailing_stops.get(t_id)
                             sl_improved = (
                                 last_sl is None
@@ -295,7 +313,7 @@ def main():
                                 result = conn.modify_trade_sl(t_id, new_sl, inst)
                                 if result:
                                     trailing_stops[t_id] = new_sl
-                                    logger.info(f"Trailing SL: Trade {t_id} ({inst}) SL -> {new_sl:.5f} | Locked: {locked_pips:.0f}p of {profit_pips:.1f}p profit")
+                                    logger.info(f"{status_label} | Trade {t_id} ({inst}) SL -> {new_sl:.5f}")
 
             # Clean up tracking for trades that are no longer open
             open_ids = {t['id'] for t in open_trades}
@@ -309,9 +327,17 @@ def main():
                 time.sleep(CYCLE_SLEEP_SECONDS)
                 continue
 
-            # 5. Scan Market for Confluence Setup
+            # 5. Scan Market for Confluence Setup (filtering out cooled-down pairs)
+            active_cooldowns = risk_manager.get_active_cooldowns()
+            cooled_down_pairs = {k.split('_')[0] for k, v in active_cooldowns.items() if 'PAIR_LOCKOUT' in v}
+
             logger.info("Scanning pairs for high-probability technical setups...")
-            candidates = scanner.scan(conn, strategy, open_instruments=active_instruments)
+            candidates = scanner.scan(
+                conn,
+                strategy,
+                open_instruments=active_instruments,
+                cooled_down_instruments=cooled_down_pairs
+            )
 
             if not candidates:
                 logger.info("No candidates passing spread gate and technical confluence. Waiting...")
@@ -327,6 +353,20 @@ def main():
             spread_pips = top_cand["spread_pips"]
             sl_dist = top_cand["sl_dist"]
             tp_dist = top_cand["tp_dist"]
+
+            # Pre-flight Cooldown Check (Anti-Revenge Trading)
+            is_cooled, rem_sec, cool_reason = risk_manager.is_instrument_cooled_down(instrument, decision)
+            if is_cooled:
+                logger.warning(f"Cooldown active on {instrument} {decision} ({rem_sec}s remaining): {cool_reason}. Skipping execution.")
+                time.sleep(CYCLE_SLEEP_SECONDS)
+                continue
+
+            # Pre-flight NFA Anti-Hedging & Single-Position Check
+            no_hedge, hedge_reason = risk_manager.validate_no_hedging(instrument, decision, open_trades)
+            if not no_hedge:
+                logger.warning(f"Anti-Hedging veto on {instrument}: {hedge_reason}. Skipping execution.")
+                time.sleep(CYCLE_SLEEP_SECONDS)
+                continue
 
             balance, margin_avail = conn.get_account_details()
             units = risk_manager.calculate_units(balance, margin_avail, pair=instrument)

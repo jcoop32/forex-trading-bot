@@ -5,8 +5,8 @@ from utils import pip_unit as get_pip_unit
 
 class MarketScanner:
     """
-    Concurrent market scanner equipped with dynamic Spread Gating and
-    time-based candle caching. Scans major currency pairs and surfaces
+    Concurrent market scanner equipped with dynamic Take-Profit-relative Spread Gating
+    and time-based candle caching. Scans major currency pairs and surfaces
     high-confidence technical setups.
     """
     def __init__(self, instruments=None):
@@ -14,12 +14,22 @@ class MarketScanner:
         self.instruments = instruments or ["EUR_USD", "GBP_USD", "USD_JPY", "USD_CAD", "AUD_USD"]
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=len(self.instruments))
 
-        # Absolute spread boundaries (pips) - dynamic gate adjusts within these
-        self.SPREAD_FLOOR = 0.8   # Never reject a spread tighter than this
-        self.SPREAD_CEILING = 2.5 # Never allow a spread wider than this
-        # Fallback static limits used when ATR is unavailable
-        self.MAX_SPREAD_MAJORS = 1.2    # EUR_USD, GBP_USD
-        self.MAX_SPREAD_CROSSES = 1.8   # USD_JPY, USD_CAD, AUD_USD
+        # Spread boundaries (pips)
+        self.SPREAD_CEILING = 2.8  # Absolute safety ceiling (e.g. news spike / rollover)
+        self.SPREAD_FLOOR = 1.0    # Absolute minimum floor
+
+        # Realistic pair-specific baseline spread floors for retail broker feeds
+        self.PAIR_SPREAD_FLOORS = {
+            "EUR_USD": 1.2,
+            "AUD_USD": 1.4,
+            "USD_CAD": 1.7,
+            "USD_JPY": 1.7,
+            "GBP_USD": 1.9,
+        }
+
+        # Fallback static limits used when TP/ATR is unavailable
+        self.MAX_SPREAD_MAJORS = 1.4    # EUR_USD, GBP_USD
+        self.MAX_SPREAD_CROSSES = 2.0   # USD_JPY, USD_CAD, AUD_USD
 
         # Candle cache: {(instrument, granularity): (timestamp, data)}
         # M1 is never cached (always fresh), M5 cached 5min, M15 cached 15min
@@ -56,22 +66,30 @@ class MarketScanner:
         self._executor.shutdown(wait=False)
         self.logger.info("MarketScanner: Thread pool executor shut down.")
 
-    def _get_max_allowed_spread(self, instrument, atr_pips=None):
+    def _get_max_allowed_spread(self, instrument, tp_pips=None, atr_pips=None):
         """
-        Dynamic spread gate: spread should be < 30% of ATR.
-        Falls back to static limits when ATR is unavailable.
-        Clamped between SPREAD_FLOOR and SPREAD_CEILING.
+        Dynamic spread gate:
+        1. If tp_pips is provided, spread must be <= 20% of TP distance (ensures >= 5:1 reward:spread).
+        2. Clamped by pair-specific baseline floor and absolute SPREAD_CEILING.
+        3. Falls back to ATR-based or static limits if TP is unavailable.
         """
+        pair_floor = self.PAIR_SPREAD_FLOORS.get(instrument, self.SPREAD_FLOOR)
+
+        if tp_pips and tp_pips > 0:
+            tp_limit = tp_pips * 0.20
+            dynamic_limit = max(pair_floor, tp_limit)
+            return min(self.SPREAD_CEILING, dynamic_limit)
+
         if atr_pips and atr_pips > 0:
-            dynamic_limit = atr_pips * 0.3
-            return max(self.SPREAD_FLOOR, min(self.SPREAD_CEILING, dynamic_limit))
+            dynamic_limit = max(pair_floor, atr_pips * 0.3)
+            return min(self.SPREAD_CEILING, dynamic_limit)
 
         # Static fallback
         if instrument in ["EUR_USD", "GBP_USD"]:
             return self.MAX_SPREAD_MAJORS
         return self.MAX_SPREAD_CROSSES
 
-    def scan(self, connection, strategy, open_instruments=None):
+    def scan(self, connection, strategy, open_instruments=None, cooled_down_instruments=None):
         """
         Scan all configured pairs concurrently.
         
@@ -79,15 +97,21 @@ class MarketScanner:
             connection (OandaConnection): API connection
             strategy (TechnicalScalpStrategy): Technical strategy instance
             open_instruments (set): Set of instruments with active open trades to skip
+            cooled_down_instruments (set): Set of instruments currently in post-loss cooldown
             
         Returns:
             list: List of trade candidates sorted by confidence (descending)
         """
         open_instruments = open_instruments or set()
+        cooled_down_instruments = cooled_down_instruments or set()
         candidates = []
 
         def analyze_pair(instrument):
             if instrument in open_instruments:
+                return None
+
+            if instrument in cooled_down_instruments:
+                self.logger.info(f"[{instrument}] Pair on cooldown. Skipping scan.")
                 return None
 
             try:
@@ -100,7 +124,7 @@ class MarketScanner:
 
                 # Quick reject on absolute ceiling before burning API calls on candles
                 if spread > self.SPREAD_CEILING:
-                    self.logger.info(f"[{instrument}] Spread {spread:.1f}p exceeds absolute ceiling {self.SPREAD_CEILING:.1f}. Skipping.")
+                    self.logger.info(f"[{instrument}] Spread {spread:.1f}p exceeds absolute ceiling {self.SPREAD_CEILING:.1f}p. Skipping.")
                     return None
 
                 # 2. Fetch Multi-Timeframe Candles (M5/M15 cached)
@@ -117,13 +141,17 @@ class MarketScanner:
                 if decision not in ["BUY", "SELL"]:
                     return None
 
-                # 4. Dynamic Spread Gate (now informed by ATR from strategy)
+                # 4. Dynamic Spread Gate (Relative to Take-Profit distance)
                 pip_unit = get_pip_unit(instrument)
+                tp_pips = tp_dist / pip_unit if tp_dist else None
                 atr_pips = atr / pip_unit if atr else None
-                max_spread = self._get_max_allowed_spread(instrument, atr_pips)
+                max_spread = self._get_max_allowed_spread(instrument, tp_pips=tp_pips, atr_pips=atr_pips)
 
                 if spread > max_spread:
-                    self.logger.info(f"[{instrument}] Spread {spread:.1f}p exceeds dynamic limit {max_spread:.1f}p (ATR: {atr_pips:.1f}p). Skipping.")
+                    self.logger.info(
+                        f"[{instrument}] Spread {spread:.1f}p exceeds dynamic limit {max_spread:.1f}p "
+                        f"(TP: {tp_pips:.1f}p, Floor: {self.PAIR_SPREAD_FLOORS.get(instrument, 1.2):.1f}p). Skipping."
+                    )
                     return None
 
                 return {

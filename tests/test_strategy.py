@@ -69,5 +69,33 @@ class TestTechnicalScalpStrategy(unittest.TestCase):
         self.assertGreater(sl_dist, 0.0)
         self.assertGreater(tp_dist, 0.0)
 
+    def test_momentum_veto_on_surging_m1(self):
+        # Create a surging upward M1 scenario where last candle is strongly bullish
+        c_m1 = self._generate_synthetic_candles(count=38, base_price=1.1000, trend=0.00005)
+        last_time = pd.to_datetime(c_m1[-1]["time"])
+        t1 = (last_time + timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%S.000000000Z")
+        t2 = (last_time + timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%S.000000000Z")
+
+        # Append two explosive green candles at the end
+        c_m1.append({
+            "time": t1,
+            "mid": {"o": "1.10200", "h": "1.10280", "l": "1.10190", "c": "1.10275"},
+            "volume": 300
+        })
+        c_m1.append({
+            "time": t2,
+            "mid": {"o": "1.10275", "h": "1.10390", "l": "1.10270", "c": "1.10385"},
+            "volume": 350
+        })
+        # M15 in downtrend
+        c_m5 = self._generate_synthetic_candles(count=40, base_price=1.1050, trend=-0.0002)
+        c_m15 = self._generate_synthetic_candles(count=40, base_price=1.1100, trend=-0.0003)
+
+        decision, conf, _, _, _ = self.strategy.evaluate(c_m1, c_m5, c_m15, "EUR_USD")
+        # Even if M15 is bearish and RSI is overbought, the strong bull bars on M1 must trigger momentum veto -> HOLD
+        self.assertEqual(decision, "HOLD")
+
+
 if __name__ == '__main__':
     unittest.main()
+

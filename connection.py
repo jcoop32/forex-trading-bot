@@ -5,6 +5,7 @@ import oandapyV20.endpoints.instruments as instruments
 import oandapyV20.endpoints.pricing as pricing
 import oandapyV20.endpoints.orders as orders
 import oandapyV20.endpoints.trades as trades
+import oandapyV20.endpoints.positions as positions
 import oandapyV20.endpoints.accounts as accounts
 from oandapyV20.contrib.requests import MarketOrderRequest, TakeProfitDetails, StopLossDetails
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception, before_sleep_log
@@ -205,6 +206,27 @@ class OandaConnection:
         except Exception as e:
             self.logger.error(f"Error closing trade {trade_id}: {e}")
             return None
+
+    def close_position_fifo(self, instrument, direction="ALL"):
+        """
+        Close positions using OANDA's native FIFO-compliant position endpoint.
+        Automatically offsets the oldest units first in compliance with NFA Rule 2-43(b).
+        """
+        data = {}
+        if direction in ["BUY", "LONG", "ALL"]:
+            data["longUnits"] = "ALL"
+        if direction in ["SELL", "SHORT", "ALL"]:
+            data["shortUnits"] = "ALL"
+
+        r = positions.PositionClose(accountID=self.account_id, instrument=instrument, data=data)
+        try:
+            self.api.request(r)
+            self.logger.info(f"Position for {instrument} closed (FIFO compliant): {r.response}")
+            return r.response
+        except Exception as e:
+            self.logger.error(f"Error closing position for {instrument} (FIFO): {e}")
+            return None
+
 
     def modify_trade_sl(self, trade_id, new_sl_price, instrument):
         """

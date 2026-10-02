@@ -47,5 +47,63 @@ class TestRiskManager(unittest.TestCase):
         self.assertAlmostEqual(sl, 150.060, places=3)
         self.assertAlmostEqual(tp, 149.930, places=3)
 
+    def test_post_loss_cooldown(self):
+        now = 1000000.0
+        # Trade closes at a loss
+        self.rm.record_trade_result("USD_JPY", "SELL", -5.50, timestamp=now)
+        
+        # 5 minutes later, SELL should still be blocked by cooldown
+        blocked, remaining, reason = self.rm.is_instrument_cooled_down("USD_JPY", "SELL", current_time=now + 300)
+        self.assertTrue(blocked)
+        self.assertEqual(remaining, 600)
+        self.assertIn("Direction cooldown active", reason)
+
+        # Opposite direction (BUY) should NOT be blocked
+        blocked_buy, _, _ = self.rm.is_instrument_cooled_down("USD_JPY", "BUY", current_time=now + 300)
+        self.assertFalse(blocked_buy)
+
+        # 16 minutes later, cooldown expired
+        blocked_expired, _, _ = self.rm.is_instrument_cooled_down("USD_JPY", "SELL", current_time=now + 960)
+        self.assertFalse(blocked_expired)
+
+    def test_consecutive_loss_lockout(self):
+        now = 1000000.0
+        # First loss
+        self.rm.record_trade_result("USD_JPY", "SELL", -5.00, timestamp=now)
+        # Second consecutive loss 10 minutes later
+        self.rm.record_trade_result("USD_JPY", "SELL", -4.50, timestamp=now + 600)
+
+        # Pair should now be completely locked out for 2 hours (7200s)
+        blocked_buy, rem, reason = self.rm.is_instrument_cooled_down("USD_JPY", "BUY", current_time=now + 700)
+        self.assertTrue(blocked_buy)
+        self.assertIn("Pair lockout active", reason)
+
+        blocked_sell, _, _ = self.rm.is_instrument_cooled_down("USD_JPY", "SELL", current_time=now + 700)
+        self.assertTrue(blocked_sell)
+
+        # Other pairs are not affected
+        blocked_eur, _, _ = self.rm.is_instrument_cooled_down("EUR_USD", "BUY", current_time=now + 700)
+        self.assertFalse(blocked_eur)
+
+    def test_validate_no_hedging(self):
+        open_trades = [
+            {"instrument": "EUR_USD", "currentUnits": 10000}  # Active BUY
+        ]
+
+        # Cannot open SELL on EUR_USD (hedging violation)
+        valid, reason = self.rm.validate_no_hedging("EUR_USD", "SELL", open_trades)
+        self.assertFalse(valid)
+        self.assertIn("NFA Anti-Hedging Violation", reason)
+
+        # Cannot open duplicate BUY on EUR_USD (single-position invariant)
+        valid_dup, reason_dup = self.rm.validate_no_hedging("EUR_USD", "BUY", open_trades)
+        self.assertFalse(valid_dup)
+        self.assertIn("Single-position invariant", reason_dup)
+
+        # Can open BUY or SELL on USD_JPY (no active position)
+        valid_jpy, _ = self.rm.validate_no_hedging("USD_JPY", "BUY", open_trades)
+        self.assertTrue(valid_jpy)
+
 if __name__ == '__main__':
     unittest.main()
+
